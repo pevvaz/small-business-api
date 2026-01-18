@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 public class SmallBusinessContext : DbContext
 {
+    public DbSet<AdminModel> Admins { get; set; }
     public DbSet<EmployeeModel> Employees { get; set; }
     public DbSet<ClientModel> Clients { get; set; }
     public DbSet<ServiceModel> Services { get; set; }

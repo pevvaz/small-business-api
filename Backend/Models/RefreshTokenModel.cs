@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 public class RefreshTokenModel
 {
-    public int Id { get; set; }
-    public int User { get; set; }
-    public string Token { get; set; }
-    public DateTime Expire { get; set; }
-    public bool Valid { get; set; }
+    [Required] public int Id { get; set; }
+    [Required] public required int User { get; set; }
+    [Required] public required string Token { get; set; }
+    [Required] public required DateTime Expire { get; set; }
+    [Required] public required bool Valid { get; set; }
 }
