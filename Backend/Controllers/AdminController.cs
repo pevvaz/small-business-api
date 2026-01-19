@@ -20,25 +20,33 @@ public class AdminController : ControllerBase
     [HttpGet(template: "list")]
     public async Task<IActionResult> ListAdminAction()
     {
-        if (!_cache.TryGetValue("list_admin", out List<AdminModel>? list))
+        if (!_cache.TryGetValue("list_admin", out List<ContextModels.UserContextModel>? list))
         {
             list = await _context.Admins.AsNoTracking().ToListAsync();
 
             _cache.Set("list_admin", list!, TimeSpan.FromMinutes(1));
+        }
 
-            if (list == null)
-            {
-                return NoContent();
-            }
+        if (list is null)
+        {
+            return NoContent();
         }
 
         return Ok(list!);
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateAdminAction([FromBody] AdminModel newAdmin)
+    public async Task<IActionResult> CreateAdminAction([FromBody] CreateUserDTO adminDTO)
     {
-        await _context.Admins.AddAsync(newAdmin);
+        var admin = new ContextModels.UserContextModel
+        {
+            Role = adminDTO.Role,
+            Name = adminDTO.Name,
+            Password = adminDTO.Password,
+            Email = adminDTO.Email
+        };
+
+        await _context.Admins.AddAsync(admin);
         await _context.SaveChangesAsync();
 
         _cache.Remove("list_admin");
@@ -47,57 +55,64 @@ public class AdminController : ControllerBase
     }
 
     [HttpPut(template: "update")]
-    public async Task<IActionResult> UpdateAdminAction([FromBody] UpdateAdminModel newData)
+    public async Task<IActionResult> UpdateAdminAction([FromBody] UpdateUserDTO updateDTO)
     {
-        try
+        if (updateDTO.Id is null)
         {
-            var admin = await _context.Admins.FirstAsync(a => a.Id == newData.Id);
-
-            if (!String.IsNullOrEmpty(newData.Role))
-            {
-                admin.Role = newData.Role!;
-            }
-            if (!String.IsNullOrEmpty(newData.Name))
-            {
-                admin.Name = newData.Name;
-            }
-            if (!String.IsNullOrEmpty(newData.Password))
-            {
-                admin.Password = newData.Password;
-            }
-            if (!String.IsNullOrEmpty(newData.Email))
-            {
-                admin.Email = newData.Email;
-            }
-
-            await _context.SaveChangesAsync();
-
-            _cache.Remove("list_admin");
-
-            return NoContent();
+            return BadRequest($"Id must be >=1, received:{updateDTO.Id}");
         }
-        catch
+
+        var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == updateDTO.Id);
+
+        if (admin is null)
         {
-            return NotFound($"An Admin of Id:{newData.Id} was not found");
+            return NotFound($"No Admin of Id:{updateDTO.Id} was found");
         }
+
+        if (!String.IsNullOrEmpty(updateDTO.Role))
+        {
+            admin.Role = updateDTO.Role!;
+        }
+        if (!String.IsNullOrEmpty(updateDTO.Name))
+        {
+            admin.Name = updateDTO.Name;
+        }
+        if (!String.IsNullOrEmpty(updateDTO.Password))
+        {
+            admin.Password = updateDTO.Password;
+        }
+        if (!String.IsNullOrEmpty(updateDTO.Email))
+        {
+            admin.Email = updateDTO.Email;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_admin");
+
+        return NoContent();
     }
 
     [HttpDelete(template: "delete")]
-    public async Task<IActionResult> DeleteAdminAction([FromBody] int id)
+    public async Task<IActionResult> DeleteAdminAction([FromBody] int? id)
     {
-        try
+        if (id is null)
         {
-            var admin = await _context.Admins.FirstAsync(a => a.Id == id);
-            _context.Admins.Remove(admin);
-            await _context.SaveChangesAsync();
-
-            _cache.Remove("list_admin");
-
-            return NoContent();
+            return BadRequest($"Id must be >=1, received:{id}");
         }
-        catch
+
+        var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == id);
+
+        if (admin is null)
         {
-            return NotFound($"An Admin of Id:{id} was not found");
+            return BadRequest($"No Admin of Id:{id} was found");
         }
+
+        _context.Admins.Remove(admin);
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_admin");
+
+        return NoContent();
     }
 }

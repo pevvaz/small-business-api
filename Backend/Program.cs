@@ -48,4 +48,4 @@ using (var scope = app.Services.CreateScope())
 app.Run();
 
 
-// Need to add a default exception handler
+// NEED TO ADD A DEFAULT EXEPTION HANDLER
