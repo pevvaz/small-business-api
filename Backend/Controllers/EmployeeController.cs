@@ -28,7 +28,7 @@ public class EmployeeController : ControllerBase
             _cache.Set("list_employee", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list == null)
+        if (list is null)
         {
             return NoContent();
         }
@@ -68,19 +68,19 @@ public class EmployeeController : ControllerBase
 
         if (!String.IsNullOrEmpty(updateUserDTO.Role))
         {
-            employee.Role = updateUserDTO.Role!;
+            employee.Role = updateUserDTO.Role;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Name))
         {
-            employee.Name = updateUserDTO.Name!;
+            employee.Name = updateUserDTO.Name;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Password))
         {
-            employee.Password = updateUserDTO.Password!;
+            employee.Password = updateUserDTO.Password;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Email))
         {
-            employee.Email = updateUserDTO.Email!;
+            employee.Email = updateUserDTO.Email;
         }
 
         await _context.SaveChangesAsync();

@@ -151,31 +151,31 @@ public class AppointmentController : ControllerBase
 
         if (updateAppointmentDTO.Employee is not null)
         {
-            appointment.Employee = updateAppointmentDTO.Employee.Value!;
+            appointment.Employee = updateAppointmentDTO.Employee.Value;
         }
         if (updateAppointmentDTO.Client is not null)
         {
-            appointment.Client = updateAppointmentDTO.Client.Value!;
+            appointment.Client = updateAppointmentDTO.Client.Value;
         }
         if (updateAppointmentDTO.Service is not null)
         {
-            appointment.Service = updateAppointmentDTO.Service.Value!;
+            appointment.Service = updateAppointmentDTO.Service.Value;
         }
         if (updateAppointmentDTO.StartDate is not null)
         {
-            appointment.StartDate = updateAppointmentDTO.StartDate.Value!;
+            appointment.StartDate = updateAppointmentDTO.StartDate.Value;
         }
         if (updateAppointmentDTO.EndDate is not null)
         {
-            appointment.EndDate = updateAppointmentDTO.EndDate.Value!;
+            appointment.EndDate = updateAppointmentDTO.EndDate.Value;
         }
         if (updateAppointmentDTO.Resolved is not null)
         {
-            appointment.Resolved = updateAppointmentDTO.Resolved.Value!;
+            appointment.Resolved = updateAppointmentDTO.Resolved.Value;
         }
         if (updateAppointmentDTO.Status is not null)
         {
-            appointment.Status = updateAppointmentDTO.Status!;
+            appointment.Status = updateAppointmentDTO.Status;
         }
 
         await _context.SaveChangesAsync();

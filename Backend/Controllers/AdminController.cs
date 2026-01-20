@@ -68,19 +68,19 @@ public class AdminController : ControllerBase
 
         if (!String.IsNullOrEmpty(updateUserDTO.Role))
         {
-            admin.Role = updateUserDTO.Role!;
+            admin.Role = updateUserDTO.Role;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Name))
         {
-            admin.Name = updateUserDTO.Name!;
+            admin.Name = updateUserDTO.Name;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Password))
         {
-            admin.Password = updateUserDTO.Password!;
+            admin.Password = updateUserDTO.Password;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Email))
         {
-            admin.Email = updateUserDTO.Email!;
+            admin.Email = updateUserDTO.Email;
         }
 
         await _context.SaveChangesAsync();
