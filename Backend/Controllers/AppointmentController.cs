@@ -146,7 +146,7 @@ public class AppointmentController : ControllerBase
 
         if (appointment is null)
         {
-            return NotFound();
+            return NotFound($"No Appointment of Id:{id} was found");
         }
 
         if (updateAppointmentDTO.Employee is not null)

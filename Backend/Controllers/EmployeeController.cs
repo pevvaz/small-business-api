@@ -1,11 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Route(template: "[controller]")]
 [Authorize(Roles = "admin")]
+[Route(template: "[controller]")]
 public class EmployeeController : ControllerBase
 {
     private readonly IMemoryCache _cache;
@@ -20,24 +21,33 @@ public class EmployeeController : ControllerBase
     [HttpGet(template: "list")]
     public async Task<IActionResult> ListEmployeeAction()
     {
-        if (!_cache.TryGetValue("list_employee", out List<EmployeeModel>? list))
+        if (!_cache.TryGetValue("list_employee", out List<ContextModels.UserContextModel>? list))
         {
             list = await _context.Employees.AsNoTracking().ToListAsync();
 
-            if (list == null)
-            {
-                return NoContent();
-            }
+            _cache.Set("list_employee", list, TimeSpan.FromMinutes(1));
+        }
 
-            _cache.Set("list_employee", list!, TimeSpan.FromMinutes(1));
+        if (list == null)
+        {
+            return NoContent();
         }
 
         return Ok(list!);
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateEmployeeAction([FromBody] EmployeeModel employee)
+    public async Task<IActionResult> CreateEmployeeAction([FromBody] CreateUserDTO createUserDTO)
     {
+        // TEST WITH AND WITHOUT Id=0
+        var employee = new ContextModels.UserContextModel
+        {
+            Role = createUserDTO.Role,
+            Name = createUserDTO.Name,
+            Password = createUserDTO.Password,
+            Email = createUserDTO.Email
+        };
+
         await _context.Employees.AddAsync(employee);
         await _context.SaveChangesAsync();
 
@@ -46,57 +56,55 @@ public class EmployeeController : ControllerBase
         return NoContent();
     }
 
-    [HttpPut(template: "update")]
-    public async Task<IActionResult> UpdateEmployeeAction([FromBody] UpdateEmployeeModel newData)
+    [HttpPut(template: "update/{id:int?}")]
+    public async Task<IActionResult> UpdateEmployeeAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in rout is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
     {
-        try
+        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == id);
+
+        if (employee is null)
         {
-            var employee = await _context.Employees.FirstAsync(e => e.Id == newData.Id);
-
-            if (!String.IsNullOrEmpty(newData.Role))
-            {
-                employee.Role = newData.Role;
-            }
-            if (!String.IsNullOrEmpty(newData.Name))
-            {
-                employee.Name = newData.Name;
-            }
-            if (!String.IsNullOrEmpty(newData.Password))
-            {
-                employee.Password = newData.Password;
-            }
-            if (!String.IsNullOrEmpty(newData.Email))
-            {
-                employee.Email = newData.Email;
-            }
-            await _context.SaveChangesAsync();
-
-            _cache.Remove("list_employee");
-
-            return NoContent();
+            return NotFound($"No Employee of Id:{id} was found");
         }
-        catch
+
+        if (!String.IsNullOrEmpty(updateUserDTO.Role))
         {
-            return NotFound($"An Employee of Id:{newData.Id} was not found");
+            employee.Role = updateUserDTO.Role!;
         }
+        if (!String.IsNullOrEmpty(updateUserDTO.Name))
+        {
+            employee.Name = updateUserDTO.Name!;
+        }
+        if (!String.IsNullOrEmpty(updateUserDTO.Password))
+        {
+            employee.Password = updateUserDTO.Password!;
+        }
+        if (!String.IsNullOrEmpty(updateUserDTO.Email))
+        {
+            employee.Email = updateUserDTO.Email!;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_employee");
+
+        return NoContent();
     }
 
-    [HttpDelete(template: "delete")]
-    public async Task<IActionResult> DeleteEmployeeAction([FromBody] int id)
+    [HttpDelete(template: "delete/{id:int?}")]
+    public async Task<IActionResult> DeleteEmployeeAction([FromBody][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        try
-        {
-            var employee = await _context.Employees.FirstAsync(e => e.Id == id);
-            _context.Employees.Remove(employee);
-            await _context.SaveChangesAsync();
+        var employee = await _context.Employees.FirstAsync(e => e.Id == id);
 
-            _cache.Remove("list_employee");
-
-            return NoContent();
-        }
-        catch
+        if (employee is null)
         {
-            return NotFound($"An Employee of Id:{id} was not found");
+            return NotFound($"No Employee of Id:{id} was found");
         }
+
+        _context.Employees.Remove(employee);
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_employee");
+
+        return NoContent();
     }
 }
