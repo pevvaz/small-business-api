@@ -37,7 +37,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
-// app.UseAuthorization();
+app.UseAuthorization();
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
