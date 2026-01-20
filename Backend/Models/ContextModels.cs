@@ -15,8 +15,8 @@ public class ContextModels
         public int Id { get; set; }
 
         public required string Name { get; set; }
-        public int Duration { get; set; }
-        public decimal Price { get; set; }
+        public required int Duration { get; set; }
+        public required decimal Price { get; set; }
         public required string Status { get; set; }
     }
 
@@ -24,21 +24,22 @@ public class ContextModels
     {
         public int Id { get; set; }
 
-        public int Employee { get; set; }
-        public int Client { get; set; }
-        public int Service { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public required string Status { get; set; }
+        public required int Employee { get; set; }
+        public required int Client { get; set; }
+        public required int Service { get; set; }
+        public required DateTime StartDate { get; set; }
+        public required DateTime EndDate { get; set; }
+        public bool Resolved { get; set; } = false;
+        public string Status { get; set; } = "scheduled";
     }
 
     public class RefreshTokenContextModel
     {
         public int Id { get; set; }
 
-        public int UserId { get; set; }
+        public required int UserId { get; set; }
         public required string Token { get; set; }
-        public DateTime Exprire { get; set; }
-        public bool Valid { get; set; }
+        public required DateTime Exprire { get; set; }
+        public required bool Valid { get; set; }
     }
 }

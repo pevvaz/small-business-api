@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,37 +17,174 @@ public class AppointmentController : ControllerBase
         _context = context;
     }
 
+    [Authorize(Roles = "admin")]
+    [HttpGet(template: "list")]
+    [HttpGet(template: "list/all")]
+    public async Task<IActionResult> ListAppointmentAllAction()
+    {
+        if (!_cache.TryGetValue("list_appointment_all", out List<ContextModels.AppointmentContextModel>? list))
+        {
+            list = await _context.Appointments.AsNoTracking().ToListAsync();
+
+            _cache.Set("list_appointment_all", list, TimeSpan.FromMinutes(1));
+        }
+
+        if (list is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(list!);
+    }
+
+    [Authorize(Roles = "admin, employee")]
+    [HttpGet(template: "list/employee/{id:int?}")]
+    public async Task<IActionResult> ListAppointmentEmployeeAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
+    {
+        if (!_cache.TryGetValue("list_appointment_employee", out List<ContextModels.AppointmentContextModel>? list))
+        {
+            list = await _context.Appointments.AsNoTracking().Where(a => a.Employee == id).ToListAsync();
+
+            _cache.Set("list_appointment_employee", list, TimeSpan.FromMinutes(1));
+        }
+
+        if (list is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(list!);
+    }
+
+    [Authorize(Roles = "admin, employee")]
+    [HttpGet(template: "list/client/{id:int?}")]
+    public async Task<IActionResult> ListAppointmentClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
+    {
+        if (!_cache.TryGetValue("list_appointment_client", out List<ContextModels.AppointmentContextModel>? list))
+        {
+            list = await _context.Appointments.AsNoTracking().Where(a => a.Client == id).ToListAsync();
+
+            _cache.Set("list_appointment_client", list, TimeSpan.FromMinutes(1));
+        }
+
+        if (list is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(list!);
+    }
+
+    [Authorize(Roles = "client")]
+    [HttpGet(template: "list/me")]
+    public async Task<IActionResult> ListAppointmentMeAction()
+    {
+        int userId = int.Parse(User.FindFirst("ClaimUserId")!.Value);
+
+        if (!_cache.TryGetValue("list_appointment_me", out List<ContextModels.AppointmentContextModel>? list))
+        {
+            list = await _context.Appointments.AsNoTracking().Where(a => a.Client == userId).ToListAsync();
+
+            _cache.Set("list_appointment_me", list, TimeSpan.FromMinutes(1));
+        }
+
+        if (list is null)
+        {
+            return NoContent();
+        }
+
+        return Ok(list!);
+    }
+
     [Authorize(Roles = "admin, client")]
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateAppointmentAction([FromBody] AppointmentModel appointment)
+    public async Task<IActionResult> CreateAppointmentAction([FromBody] CreateAppointmentDTO createAppointmentDTO)
     {
-        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == appointment.Employee);
-        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == appointment.Client);
-        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == appointment.Service);
-
+        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.Employee);
         if (employee is null)
+        {
+            NotFound($"No Employee of Id:{createAppointmentDTO.Employee} was found");
+        }
 
-            appointment.EndDate = appointment.StartDate.AddMinutes(service!.Duration);
+        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.Client);
+        if (client is null)
+        {
+            NotFound($"No Client of Id:{createAppointmentDTO.Client} was found");
+        }
+        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == createAppointmentDTO.Service);
+        if (service is null)
+        {
+            NotFound($"No Service of Id:{createAppointmentDTO.Service} was found");
+        }
 
+        // TEST WITH AND WITHOUT Id=0
+        var appointment = new ContextModels.AppointmentContextModel
+        {
+            Employee = employee!.Id,
+            Client = client!.Id,
+            Service = service!.Id,
+            StartDate = createAppointmentDTO.StartDate!.Value,
+            EndDate = createAppointmentDTO.StartDate.Value.AddMinutes(service!.Duration),
+        };
 
         await _context.Appointments.AddAsync(appointment);
         await _context.SaveChangesAsync();
 
-        _context.Remove("list_appointment");
-
-        return NoContent();
-
-
-        return BadRequest("At least one Id doesn't exist");
-
+        _context.Remove("list_appointment_all");
+        _context.Remove("list_appointment_employee");
+        _context.Remove("list_appointment_client");
+        _context.Remove("list_appointment_me");
 
         return NoContent();
     }
 
-    [Authorize(Roles = "admin")]
-    [HttpPut(template: "update")]
-    public async Task<IActionResult> UpdateAppointmentAction([FromBody] UpdateAppointmentModel newData)
+    [Authorize(Roles = "admin, employee")]
+    [HttpPut(template: "update/{id:int?}")]
+    public async Task<IActionResult> UpdateAppointmentAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateAppointmentDTO updateAppointmentDTO)
     {
+        var appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id == id);
+
+        if (appointment is null)
+        {
+            return NotFound();
+        }
+
+        if (updateAppointmentDTO.Employee is not null)
+        {
+            appointment.Employee = updateAppointmentDTO.Employee.Value!;
+        }
+        if (updateAppointmentDTO.Client is not null)
+        {
+            appointment.Client = updateAppointmentDTO.Client.Value!;
+        }
+        if (updateAppointmentDTO.Service is not null)
+        {
+            appointment.Service = updateAppointmentDTO.Service.Value!;
+        }
+        if (updateAppointmentDTO.StartDate is not null)
+        {
+            appointment.StartDate = updateAppointmentDTO.StartDate.Value!;
+        }
+        if (updateAppointmentDTO.EndDate is not null)
+        {
+            appointment.EndDate = updateAppointmentDTO.EndDate.Value!;
+        }
+        if (updateAppointmentDTO.Resolved is not null)
+        {
+            appointment.Resolved = updateAppointmentDTO.Resolved.Value!;
+        }
+        if (updateAppointmentDTO.Status is not null)
+        {
+            appointment.Status = updateAppointmentDTO.Status!;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _context.Remove("list_appointment_all");
+        _context.Remove("list_appointment_employee");
+        _context.Remove("list_appointment_client");
+        _context.Remove("list_appointment_me");
+
         return NoContent();
     }
 }

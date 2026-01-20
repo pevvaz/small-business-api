@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,14 +37,15 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateAdminAction([FromBody] CreateUserDTO adminDTO)
+    public async Task<IActionResult> CreateAdminAction([FromBody] CreateUserDTO createUserDTO)
     {
+        // TEST WITH AND WITHOUT Id=0
         var admin = new ContextModels.UserContextModel
         {
-            Role = adminDTO.Role,
-            Name = adminDTO.Name,
-            Password = adminDTO.Password,
-            Email = adminDTO.Email
+            Role = createUserDTO.Role,
+            Name = createUserDTO.Name,
+            Password = createUserDTO.Password,
+            Email = createUserDTO.Email
         };
 
         await _context.Admins.AddAsync(admin);
@@ -51,39 +53,34 @@ public class AdminController : ControllerBase
 
         _cache.Remove("list_admin");
 
-        return Ok();
+        return NoContent();
     }
 
-    [HttpPut(template: "update")]
-    public async Task<IActionResult> UpdateAdminAction([FromBody] UpdateUserDTO updateDTO)
+    [HttpPut(template: "update/{id:int?}")]
+    public async Task<IActionResult> UpdateAdminAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
     {
-        if (updateDTO.Id is null)
-        {
-            return BadRequest($"Id must be >=1, received:{updateDTO.Id}");
-        }
-
-        var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == updateDTO.Id);
+        var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == id);
 
         if (admin is null)
         {
-            return NotFound($"No Admin of Id:{updateDTO.Id} was found");
+            return NotFound($"No Admin of Id:{id} was found");
         }
 
-        if (!String.IsNullOrEmpty(updateDTO.Role))
+        if (!String.IsNullOrEmpty(updateUserDTO.Role))
         {
-            admin.Role = updateDTO.Role!;
+            admin.Role = updateUserDTO.Role!;
         }
-        if (!String.IsNullOrEmpty(updateDTO.Name))
+        if (!String.IsNullOrEmpty(updateUserDTO.Name))
         {
-            admin.Name = updateDTO.Name;
+            admin.Name = updateUserDTO.Name;
         }
-        if (!String.IsNullOrEmpty(updateDTO.Password))
+        if (!String.IsNullOrEmpty(updateUserDTO.Password))
         {
-            admin.Password = updateDTO.Password;
+            admin.Password = updateUserDTO.Password;
         }
-        if (!String.IsNullOrEmpty(updateDTO.Email))
+        if (!String.IsNullOrEmpty(updateUserDTO.Email))
         {
-            admin.Email = updateDTO.Email;
+            admin.Email = updateUserDTO.Email;
         }
 
         await _context.SaveChangesAsync();
@@ -93,19 +90,14 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete(template: "delete")]
-    public async Task<IActionResult> DeleteAdminAction([FromBody] int? id)
+    [HttpDelete(template: "delete/{id:int?}")]
+    public async Task<IActionResult> DeleteAdminAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        if (id is null)
-        {
-            return BadRequest($"Id must be >=1, received:{id}");
-        }
-
         var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == id);
 
         if (admin is null)
         {
-            return BadRequest($"No Admin of Id:{id} was found");
+            return NotFound($"No Admin of Id:{id} was found");
         }
 
         _context.Admins.Remove(admin);
