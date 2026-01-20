@@ -1,11 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Route(template: "[controller]")]
 [Authorize(Roles = "admin, employee")]
+[Route(template: "[controller]")]
 public class ClientController : ControllerBase
 {
     private readonly IMemoryCache _cache;
@@ -20,24 +21,32 @@ public class ClientController : ControllerBase
     [HttpGet(template: "list")]
     public async Task<IActionResult> ListClientAction()
     {
-        if (!_cache.TryGetValue("list_client", out List<ClientModel>? list))
+        if (!_cache.TryGetValue("list_client", out List<ContextModels.UserContextModel>? list))
         {
             list = await _context.Clients.AsNoTracking().ToListAsync();
 
-            _cache.Set("list_client", list!, TimeSpan.FromMinutes(1));
+            _cache.Set("list_client", list, TimeSpan.FromMinutes(1));
+        }
 
-            if (list == null)
-            {
-                return NoContent();
-            }
+        if (list is null)
+        {
+            return NoContent();
         }
 
         return Ok(list!);
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateClientAction([FromBody] ClientModel client)
+    public async Task<IActionResult> CreateClientAction([FromBody] CreateUserDTO createUserDTO)
     {
+        var client = new ContextModels.UserContextModel
+        {
+            Role = createUserDTO.Role,
+            Name = createUserDTO.Name,
+            Password = createUserDTO.Password,
+            Email = createUserDTO.Email,
+        };
+
         await _context.Clients.AddAsync(client);
         await _context.SaveChangesAsync();
 
@@ -46,58 +55,55 @@ public class ClientController : ControllerBase
         return Ok();
     }
 
-    [HttpPut(template: "update")]
-    public async Task<IActionResult> UpdateClientAction([FromBody] UpdateClientModel newData)
+    [HttpPut(template: "update/{id:int?}")]
+    public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
     {
-        try
+        var client = await _context.Clients.FirstAsync(c => c.Id == id);
+
+        if (client is null)
         {
-            var client = await _context.Clients.FirstAsync(c => c.Id == newData.Id);
-
-            if (!String.IsNullOrEmpty(newData.Role))
-            {
-                client.Role = newData.Role;
-            }
-            if (!String.IsNullOrEmpty(newData.Name))
-            {
-                client.Name = newData.Name;
-            }
-            if (!String.IsNullOrEmpty(newData.Password))
-            {
-                client.Password = newData.Password;
-            }
-            if (!String.IsNullOrEmpty(newData.Email))
-            {
-                client.Email = newData.Email;
-            }
-
-            await _context.SaveChangesAsync();
-
-            _cache.Remove("list_client");
-
-            return NoContent();
+            return NotFound($"No Client of Id:{id} was found");
         }
-        catch
+
+        if (!String.IsNullOrEmpty(updateUserDTO.Role))
         {
-            return NotFound($"A Client of Id:{newData.Id} was not found");
+            client.Role = updateUserDTO.Role;
         }
+        if (!String.IsNullOrEmpty(updateUserDTO.Name))
+        {
+            client.Name = updateUserDTO.Name;
+        }
+        if (!String.IsNullOrEmpty(updateUserDTO.Password))
+        {
+            client.Password = updateUserDTO.Password;
+        }
+        if (!String.IsNullOrEmpty(updateUserDTO.Email))
+        {
+            client.Email = updateUserDTO.Email;
+        }
+
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_client");
+
+        return NoContent();
     }
 
-    [HttpDelete(template: "delete")]
-    public async Task<IActionResult> DeleteClientAction([FromBody] int id)
+    [HttpDelete(template: "delete/{id:int?}")]
+    public async Task<IActionResult> DeleteClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        try
-        {
-            var client = await _context.Clients.FirstAsync(c => c.Id == id);
-            _context.Clients.Remove(client);
-            await _context.SaveChangesAsync();
+        var client = await _context.Clients.FirstAsync(c => c.Id == id);
 
-            _cache.Remove("list_client");
-
-            return NoContent();
-        }
-        catch
+        if (client is null)
         {
-            return NotFound($"A Client of Id:{id} was not found");
+            return NotFound($"No Client of Id:{id} was found");
         }
+
+        _context.Clients.Remove(client);
+        await _context.SaveChangesAsync();
+
+        _cache.Remove("list_client");
+
+        return NoContent();
     }
 }
