@@ -3,6 +3,13 @@ public class ContextModels
     public class UserContextModel
     {
         public int Id { get; set; }
+        public int UserId { get; set; }
+        public required UserDataContextModel UserDataContextModel { get; set; }
+    }
+
+    public class UserDataContextModel
+    {
+        public int Id { get; set; }
 
         public required string Role { get; set; }
         public required string Name { get; set; }

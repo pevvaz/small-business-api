@@ -23,7 +23,7 @@ public class SessionController : ControllerBase
         _context = context;
     }
 
-    /* [HttpPost(template: "login")]
+    [HttpPost(template: "login")]
     public async Task<IActionResult> LoginAction([FromBody] LoginSessionDTO loginSessionDTO)
     {
         if (loginSessionDTO.Role != "admin" || loginSessionDTO.Role != "employee" || loginSessionDTO.Role != "client")
@@ -31,7 +31,7 @@ public class SessionController : ControllerBase
             return BadRequest("Role in body doesn't exist");
         }
 
-        var user = await _context.{Admins, Employees, Clients}...;
+        // var user;
 
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
@@ -53,7 +53,7 @@ public class SessionController : ControllerBase
         var token = tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
 
         return Ok(token);
-    } */
+    }
 
     [HttpPost(template: "refresh")]
     public async Task<IActionResult> RefreshAction()
