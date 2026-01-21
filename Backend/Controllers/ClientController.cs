@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Authorize(Roles = "admin, employee")]
+// [Authorize(Roles = "admin, employee")]
 [Route(template: "[controller]")]
 public class ClientController : ControllerBase
 {
@@ -58,7 +58,7 @@ public class ClientController : ControllerBase
     [HttpPut(template: "update/{id:int?}")]
     public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
     {
-        var client = await _context.Clients.FirstAsync(c => c.Id == id);
+        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {
@@ -92,12 +92,14 @@ public class ClientController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var client = await _context.Clients.FirstAsync(c => c.Id == id);
+        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {
             return NotFound($"No Client of Id:{id} was found");
         }
+
+        client.
 
         _context.Clients.Remove(client);
         await _context.SaveChangesAsync();

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Authorize(Roles = "admin")]
+// [Authorize(Roles = "admin")]
 [Route(template: "[controller]")]
 public class EmployeeController : ControllerBase
 {
@@ -39,7 +39,6 @@ public class EmployeeController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateEmployeeAction([FromBody] CreateUserDTO createUserDTO)
     {
-        // TEST WITH AND WITHOUT Id=0
         var employee = new ContextModels.UserContextModel
         {
             Role = createUserDTO.Role,
@@ -93,7 +92,7 @@ public class EmployeeController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteEmployeeAction([FromBody][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var employee = await _context.Employees.FirstAsync(e => e.Id == id);
+        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == id);
 
         if (employee is null)
         {

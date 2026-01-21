@@ -1,13 +1,18 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 public class ContextModels
 {
-    public class UserContextModel
+    public class SessionContextModel
     {
         public int Id { get; set; }
+
+        [ForeignKey(nameof(User))]
         public int UserId { get; set; }
-        public required UserDataContextModel UserDataContextModel { get; set; }
+
+        public required UserContextModel User { get; set; }
     }
 
-    public class UserDataContextModel
+    public class UserContextModel
     {
         public int Id { get; set; }
 
@@ -31,9 +36,18 @@ public class ContextModels
     {
         public int Id { get; set; }
 
-        public required int Employee { get; set; }
-        public required int Client { get; set; }
-        public required int Service { get; set; }
+        [ForeignKey(nameof(Employee))]
+        public int EmployeeId { get; set; }
+        public required UserContextModel Employee { get; set; }
+
+        [ForeignKey(nameof(Client))]
+        public int ClientId { get; set; }
+        public required UserContextModel Client { get; set; }
+
+        [ForeignKey(nameof(Service))]
+        public int ServiceId { get; set; }
+        public required UserContextModel Service { get; set; }
+
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
         public bool Resolved { get; set; } = false;

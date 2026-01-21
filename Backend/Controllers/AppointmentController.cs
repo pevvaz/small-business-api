@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Authorize]
+// [Authorize]
 [Route(template: "[controller]")]
 public class AppointmentController : ControllerBase
 {
@@ -17,7 +17,7 @@ public class AppointmentController : ControllerBase
         _context = context;
     }
 
-    [Authorize(Roles = "admin")]
+    // [Authorize(Roles = "admin")]
     [HttpGet(template: "list")]
     [HttpGet(template: "list/all")]
     public async Task<IActionResult> ListAppointmentAllAction()
@@ -37,15 +37,15 @@ public class AppointmentController : ControllerBase
         return Ok(list!);
     }
 
-    [Authorize(Roles = "admin, employee")]
+    // [Authorize(Roles = "admin, employee")]
     [HttpGet(template: "list/employee/{id:int?}")]
     public async Task<IActionResult> ListAppointmentEmployeeAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        if (!_cache.TryGetValue("list_appointment_employee", out List<ContextModels.AppointmentContextModel>? list))
+        if (!_cache.TryGetValue($"list_appointment_employee_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
             list = await _context.Appointments.AsNoTracking().Where(a => a.Employee == id).ToListAsync();
 
-            _cache.Set("list_appointment_employee", list, TimeSpan.FromMinutes(1));
+            _cache.Set($"list_appointment_employee_{id}", list, TimeSpan.FromMinutes(1));
         }
 
         if (list is null)
@@ -56,15 +56,15 @@ public class AppointmentController : ControllerBase
         return Ok(list!);
     }
 
-    [Authorize(Roles = "admin, employee")]
+    // [Authorize(Roles = "admin, employee")]
     [HttpGet(template: "list/client/{id:int?}")]
     public async Task<IActionResult> ListAppointmentClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        if (!_cache.TryGetValue("list_appointment_client", out List<ContextModels.AppointmentContextModel>? list))
+        if (!_cache.TryGetValue($"list_appointment_client_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
             list = await _context.Appointments.AsNoTracking().Where(a => a.Client == id).ToListAsync();
 
-            _cache.Set("list_appointment_client", list, TimeSpan.FromMinutes(1));
+            _cache.Set($"list_appointment_client_{id}", list, TimeSpan.FromMinutes(1));
         }
 
         if (list is null)
@@ -75,17 +75,17 @@ public class AppointmentController : ControllerBase
         return Ok(list!);
     }
 
-    [Authorize(Roles = "client")]
-    [HttpGet(template: "list/me")]
+    // [Authorize(Roles = "client")]
+    [HttpGet(template: "list/mine")]
     public async Task<IActionResult> ListAppointmentMeAction()
     {
         int userId = int.Parse(User.FindFirst("ClaimUserId")!.Value);
 
-        if (!_cache.TryGetValue("list_appointment_me", out List<ContextModels.AppointmentContextModel>? list))
+        if (!_cache.TryGetValue($"list_appointment_me_{userId}", out List<ContextModels.AppointmentContextModel>? list))
         {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.Client == userId).ToListAsync();
+            list = await _context.Appointments.AsNoTracking().Where(a => a.ClientId == userId).ToListAsync();
 
-            _cache.Set("list_appointment_me", list, TimeSpan.FromMinutes(1));
+            _cache.Set($"list_appointment_me_{userId}", list, TimeSpan.FromMinutes(1));
         }
 
         if (list is null)
@@ -96,7 +96,7 @@ public class AppointmentController : ControllerBase
         return Ok(list!);
     }
 
-    [Authorize(Roles = "admin, client")]
+    // [Authorize(Roles = "admin, client")]
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateAppointmentAction([FromBody] CreateAppointmentDTO createAppointmentDTO)
     {
@@ -138,7 +138,7 @@ public class AppointmentController : ControllerBase
         return NoContent();
     }
 
-    [Authorize(Roles = "admin, employee")]
+    // [Authorize(Roles = "admin, employee")]
     [HttpPut(template: "update/{id:int?}")]
     public async Task<IActionResult> UpdateAppointmentAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateAppointmentDTO updateAppointmentDTO)
     {

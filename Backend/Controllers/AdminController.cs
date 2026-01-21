@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Authorize(Roles = "admin")]
+// [Authorize(Roles = "admin")]
 [Route(template: "[controller]")]
 public class AdminController : ControllerBase
 {
@@ -39,7 +39,6 @@ public class AdminController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateAdminAction([FromBody] CreateUserDTO createUserDTO)
     {
-        // TEST WITH AND WITHOUT Id=0
         var admin = new ContextModels.UserContextModel
         {
             Role = createUserDTO.Role,
@@ -49,6 +48,13 @@ public class AdminController : ControllerBase
         };
 
         await _context.Admins.AddAsync(admin);
+
+        var session = new ContextModels.SessionContextModel
+        {
+            User = admin,
+        };
+
+        await _context.Sessions.AddAsync(session);
         await _context.SaveChangesAsync();
 
         _cache.Remove("list_admin");
