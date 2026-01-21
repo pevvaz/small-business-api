@@ -46,7 +46,7 @@ public class ContextModels
 
         [ForeignKey(nameof(Service))]
         public int ServiceId { get; set; }
-        public required UserContextModel Service { get; set; }
+        public required ServiceContextModel Service { get; set; }
 
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }

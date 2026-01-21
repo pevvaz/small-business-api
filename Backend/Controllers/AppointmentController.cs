@@ -43,7 +43,7 @@ public class AppointmentController : ControllerBase
     {
         if (!_cache.TryGetValue($"list_appointment_employee_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.Employee == id).ToListAsync();
+            list = await _context.Appointments.AsNoTracking().Where(a => a.EmployeeId == id).ToListAsync();
 
             _cache.Set($"list_appointment_employee_{id}", list, TimeSpan.FromMinutes(1));
         }
@@ -62,7 +62,7 @@ public class AppointmentController : ControllerBase
     {
         if (!_cache.TryGetValue($"list_appointment_client_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.Client == id).ToListAsync();
+            list = await _context.Appointments.AsNoTracking().Where(a => a.ClientId == id).ToListAsync();
 
             _cache.Set($"list_appointment_client_{id}", list, TimeSpan.FromMinutes(1));
         }
@@ -100,40 +100,39 @@ public class AppointmentController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateAppointmentAction([FromBody] CreateAppointmentDTO createAppointmentDTO)
     {
-        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.Employee);
+        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
         if (employee is null)
         {
-            NotFound($"No Employee of Id:{createAppointmentDTO.Employee} was found");
+            NotFound($"No Employee of Id:{createAppointmentDTO.EmployeeId} was found");
         }
 
-        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.Client);
+        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.ClientId);
         if (client is null)
         {
-            NotFound($"No Client of Id:{createAppointmentDTO.Client} was found");
+            NotFound($"No Client of Id:{createAppointmentDTO.ClientId} was found");
         }
-        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == createAppointmentDTO.Service);
+        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == createAppointmentDTO.ServiceId);
         if (service is null)
         {
-            NotFound($"No Service of Id:{createAppointmentDTO.Service} was found");
+            NotFound($"No Service of Id:{createAppointmentDTO.ServiceId} was found");
         }
 
-        // TEST WITH AND WITHOUT Id=0
         var appointment = new ContextModels.AppointmentContextModel
         {
-            Employee = employee!.Id,
-            Client = client!.Id,
-            Service = service!.Id,
+            Employee = employee!,
+            Client = client!,
+            Service = service!,
             StartDate = createAppointmentDTO.StartDate!.Value,
-            EndDate = createAppointmentDTO.StartDate.Value.AddMinutes(service!.Duration),
+            EndDate = createAppointmentDTO.StartDate!.Value.AddMinutes(service!.Duration)
         };
 
         await _context.Appointments.AddAsync(appointment);
         await _context.SaveChangesAsync();
 
         _context.Remove("list_appointment_all");
-        _context.Remove("list_appointment_employee");
-        _context.Remove("list_appointment_client");
-        _context.Remove("list_appointment_me");
+        _context.Remove($"list_appointment_employee_{createAppointmentDTO.EmployeeId}");
+        _context.Remove($"list_appointment_client_{createAppointmentDTO.ClientId}");
+        _context.Remove($"list_appointment_me_{createAppointmentDTO.ServiceId}");
 
         return NoContent();
     }
@@ -149,17 +148,14 @@ public class AppointmentController : ControllerBase
             return NotFound($"No Appointment of Id:{id} was found");
         }
 
-        if (updateAppointmentDTO.Employee is not null)
+        if (updateAppointmentDTO.ServiceId is not null)
         {
-            appointment.Employee = updateAppointmentDTO.Employee.Value;
-        }
-        if (updateAppointmentDTO.Client is not null)
-        {
-            appointment.Client = updateAppointmentDTO.Client.Value;
-        }
-        if (updateAppointmentDTO.Service is not null)
-        {
-            appointment.Service = updateAppointmentDTO.Service.Value;
+            var service = await _context.Services.AsNoTracking().SingleOrDefaultAsync(s => s.Id == updateAppointmentDTO.ServiceId);
+
+            if (service is null)
+            {
+                appointment.Service = service!;
+            }
         }
         if (updateAppointmentDTO.StartDate is not null)
         {
@@ -181,9 +177,9 @@ public class AppointmentController : ControllerBase
         await _context.SaveChangesAsync();
 
         _context.Remove("list_appointment_all");
-        _context.Remove("list_appointment_employee");
-        _context.Remove("list_appointment_client");
-        _context.Remove("list_appointment_me");
+        _context.Remove($"list_appointment_employee_{id}");
+        _context.Remove($"list_appointment_client_{id}");
+        _context.Remove($"list_appointment_me_{id}");
 
         return NoContent();
     }

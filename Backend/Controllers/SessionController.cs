@@ -27,9 +27,9 @@ public class SessionController : ControllerBase
     [HttpPost(template: "login")]
     public async Task<IActionResult> LoginAction([FromBody] LoginSessionDTO loginSessionDTO)
     {
-        var user = await _context.Users.Include(u => u.User).SingleOrDefaultAsync(u => (u.User.Name == loginSessionDTO.Name || u.User.Email == loginSessionDTO.Email) && u.User.Password == loginSessionDTO.Password);
+        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).FirstOrDefaultAsync(s => (s.User.Name == loginSessionDTO.Name || s.User.Email == loginSessionDTO.Email) && s.User.Password == loginSessionDTO.Password);
 
-        if (user is null)
+        if (session is null)
         {
             return BadRequest("Role in body doesn't exist");
         }
@@ -37,13 +37,13 @@ public class SessionController : ControllerBase
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
             Issuer = _configuration["Settings:Issuer"]!,
-            Audience = user.User.Role.ToLower(),
+            Audience = session.User.Role.ToLower(),
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.Role, user.User.Role.ToLower()),
-                new Claim(ClaimTypes.Name, user.User.Name),
-                new Claim(ClaimTypes.Email, user.User.Email),
-                new Claim("ClaimUserId", $"{user.Id}"),
+                new Claim(ClaimTypes.Role,session.User.Role.ToLower()),
+                new Claim(ClaimTypes.Name,session.User.Name),
+                new Claim(ClaimTypes.Email,session.User.Email),
+                new Claim("ClaimUserId", $"{session.Id}"),
                 new Claim(ClaimTypes.Hash, Encoding.UTF8.GetHashCode().ToString())
             }),
             Expires = DateTime.UtcNow.AddMinutes(5),

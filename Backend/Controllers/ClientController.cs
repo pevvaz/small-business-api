@@ -99,8 +99,6 @@ public class ClientController : ControllerBase
             return NotFound($"No Client of Id:{id} was found");
         }
 
-        client.
-
         _context.Clients.Remove(client);
         await _context.SaveChangesAsync();
 
