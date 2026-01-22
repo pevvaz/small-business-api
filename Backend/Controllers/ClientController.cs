@@ -23,7 +23,7 @@ public class ClientController : ControllerBase
     {
         if (!_cache.TryGetValue("list_client", out List<ContextModels.UserContextModel>? list))
         {
-            list = await _context.Clients.AsNoTracking().ToListAsync();
+            list = await _context.Users.Where(u => u.Role == "client").AsNoTracking().ToListAsync();
 
             _cache.Set("list_client", list, TimeSpan.FromMinutes(1));
         }
@@ -39,15 +39,20 @@ public class ClientController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateClientAction([FromBody] UserDTO.CreateUserDTO createUserDTO)
     {
+        if (await _context.Sessions.AnyAsync(s => s.User.Password == createUserDTO.Password || s.User.Email == createUserDTO.Email))
+        {
+            return BadRequest("Password or Email in body is already in use");
+        }
+
         var client = new ContextModels.UserContextModel
         {
-            Role = createUserDTO.Role,
+            Role = "client",
             Name = createUserDTO.Name,
             Password = createUserDTO.Password,
             Email = createUserDTO.Email,
         };
 
-        await _context.Clients.AddAsync(client);
+        await _context.Users.AddAsync(client);
 
         var session = new ContextModels.SessionContextModel
         {
@@ -66,7 +71,7 @@ public class ClientController : ControllerBase
     [HttpPut(template: "update/{id:int?}")]
     public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UserDTO.UpdateUserDTO updateUserDTO)
     {
-        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == id);
+        var client = await _context.Users.Where(u => u.Role == "client").SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {
@@ -79,10 +84,20 @@ public class ClientController : ControllerBase
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Password))
         {
+            if (await _context.Sessions.AnyAsync(s => s.User.Password == updateUserDTO.Password && s.User.Id != client.Id))
+            {
+                return BadRequest("Password is already in use");
+            }
+
             client.Password = updateUserDTO.Password;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Email))
         {
+            if (await _context.Sessions.AnyAsync(s => s.User.Email == updateUserDTO.Email && s.User.Id != client.Id))
+            {
+                return BadRequest("Email is already in use");
+            }
+
             client.Email = updateUserDTO.Email;
         }
 
@@ -96,14 +111,14 @@ public class ClientController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == id);
+        var client = await _context.Users.Where(u => u.Role == "client").SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {
             return NotFound($"No Client of Id:{id} was found");
         }
 
-        _context.Clients.Remove(client);
+        _context.Users.Remove(client);
         await _context.SaveChangesAsync();
 
         _cache.Remove("list_client");

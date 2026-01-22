@@ -4,8 +4,8 @@ public class UserDTO
 {
     public class CreateUserDTO
     {
-        [Required(ErrorMessage = "Role in body is required")]
         public required string Role { get; set; }
+        public required ContextModels.UserContextModel.EnumUserRoles RoleDois { get; set; } // fazer test no swagger com string e enum
 
         [Required(ErrorMessage = "Name in body is required")]
         public required string Name { get; set; }

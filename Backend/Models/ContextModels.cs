@@ -14,6 +14,13 @@ public class ContextModels
 
     public class UserContextModel
     {
+        public enum EnumUserRoles
+        {
+            Admin,
+            Employee,
+            Client
+        }
+
         public int Id { get; set; }
 
         public required string Role { get; set; }

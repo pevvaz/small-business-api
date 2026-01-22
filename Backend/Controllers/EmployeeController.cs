@@ -23,7 +23,7 @@ public class EmployeeController : ControllerBase
     {
         if (!_cache.TryGetValue("list_employee", out List<ContextModels.UserContextModel>? list))
         {
-            list = await _context.Employees.AsNoTracking().ToListAsync();
+            list = await _context.Users.Where(u => u.Role == "employee").AsNoTracking().ToListAsync();
 
             _cache.Set("list_employee", list, TimeSpan.FromMinutes(1));
         }
@@ -39,15 +39,20 @@ public class EmployeeController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateEmployeeAction([FromBody] UserDTO.CreateUserDTO createUserDTO)
     {
+        if (await _context.Sessions.AnyAsync(s => s.User.Password == createUserDTO.Password || s.User.Email == createUserDTO.Email))
+        {
+            return BadRequest("Passowrd or Email is already in use");
+        }
+
         var employee = new ContextModels.UserContextModel
         {
-            Role = createUserDTO.Role,
+            Role = "employee",
             Name = createUserDTO.Name,
             Password = createUserDTO.Password,
             Email = createUserDTO.Email
         };
 
-        await _context.Employees.AddAsync(employee);
+        await _context.Users.AddAsync(employee);
 
         var session = new ContextModels.SessionContextModel
         {
@@ -66,7 +71,7 @@ public class EmployeeController : ControllerBase
     [HttpPut(template: "update/{id:int?}")]
     public async Task<IActionResult> UpdateEmployeeAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in rout is out of range")] int? id, [FromBody] UserDTO.UpdateUserDTO updateUserDTO)
     {
-        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == id);
+        var employee = await _context.Users.SingleOrDefaultAsync(e => e.Id == id);
 
         if (employee is null)
         {
@@ -79,10 +84,20 @@ public class EmployeeController : ControllerBase
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Password))
         {
+            if (await _context.Sessions.AnyAsync(s => s.User.Password == updateUserDTO.Password && s.User.Id != employee.Id))
+            {
+                return BadRequest("Password is already in use");
+            }
+
             employee.Password = updateUserDTO.Password;
         }
         if (!String.IsNullOrEmpty(updateUserDTO.Email))
         {
+            if (await _context.Sessions.AnyAsync(s => s.User.Email == updateUserDTO.Email && s.User.Id != employee.Id))
+            {
+                return BadRequest("Email is already in use");
+            }
+
             employee.Email = updateUserDTO.Email;
         }
 
@@ -96,14 +111,14 @@ public class EmployeeController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteEmployeeAction([FromBody][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == id);
+        var employee = await _context.Users.SingleOrDefaultAsync(e => e.Id == id);
 
         if (employee is null)
         {
             return NotFound($"No Employee of Id:{id} was found");
         }
 
-        _context.Employees.Remove(employee);
+        _context.Users.Remove(employee);
         await _context.SaveChangesAsync();
 
         _cache.Remove("list_employee");

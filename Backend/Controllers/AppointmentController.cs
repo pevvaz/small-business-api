@@ -95,21 +95,22 @@ public class AppointmentController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateAppointmentAction([FromBody] AppointmentDTO.CreateAppointmentDTO createAppointmentDTO)
     {
-        var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
+        var employee = await _context.Users.Where(u => u.Role == "employee").AsNoTracking().SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
         if (employee is null)
         {
-            NotFound($"No Employee of Id:{createAppointmentDTO.EmployeeId} was found");
+            return NotFound($"No Employee of Id:{createAppointmentDTO.EmployeeId} was found");
         }
 
-        var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.ClientId);
+        var client = await _context.Users.Where(u => u.Role == "client").AsNoTracking().SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.ClientId);
         if (client is null)
         {
-            NotFound($"No Client of Id:{createAppointmentDTO.ClientId} was found");
+            return NotFound($"No Client of Id:{createAppointmentDTO.ClientId} was found");
         }
-        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == createAppointmentDTO.ServiceId);
+
+        var service = await _context.Services.AsNoTracking().SingleOrDefaultAsync(s => s.Id == createAppointmentDTO.ServiceId);
         if (service is null)
         {
-            NotFound($"No Service of Id:{createAppointmentDTO.ServiceId} was found");
+            return NotFound($"No Service of Id:{createAppointmentDTO.ServiceId} was found");
         }
 
         var appointment = new ContextModels.AppointmentContextModel
@@ -128,9 +129,9 @@ public class AppointmentController : ControllerBase
         await _context.Appointments.AddAsync(appointment);
         await _context.SaveChangesAsync();
 
-        _context.Remove("list_appointment_all");
-        _context.Remove($"list_appointment_employee_{employee.Id}");
-        _context.Remove($"list_appointment_client_{client.Id}");
+        _cache.Remove("list_appointment_all");
+        _cache.Remove($"list_appointment_employee_{employee.Id}");
+        _cache.Remove($"list_appointment_client_{client.Id}");
 
         return NoContent();
     }
@@ -178,9 +179,9 @@ public class AppointmentController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        _context.Remove("list_appointment_all");
-        _context.Remove($"list_appointment_employee_{id}");
-        _context.Remove($"list_appointment_client_{id}");
+        _cache.Remove("list_appointment_all");
+        _cache.Remove($"list_appointment_employee_{id}");
+        _cache.Remove($"list_appointment_client_{id}");
 
         return NoContent();
     }

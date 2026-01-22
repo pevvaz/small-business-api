@@ -5,9 +5,7 @@ public class SmallBusinessContext : DbContext
     public SmallBusinessContext(DbContextOptions<SmallBusinessContext> options) : base(options) { }
 
     public DbSet<ContextModels.SessionContextModel> Sessions { get; set; }
-    public DbSet<ContextModels.UserContextModel> Admins { get; set; }
-    public DbSet<ContextModels.UserContextModel> Employees { get; set; }
-    public DbSet<ContextModels.UserContextModel> Clients { get; set; }
+    public DbSet<ContextModels.UserContextModel> Users { get; set; }
     public DbSet<ContextModels.ServiceContextModel> Services { get; set; }
     public DbSet<ContextModels.AppointmentContextModel> Appointments { get; set; }
     public DbSet<ContextModels.RefreshTokenContextModel> RefreshTokens { get; set; }
