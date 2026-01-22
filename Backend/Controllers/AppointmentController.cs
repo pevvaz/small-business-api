@@ -43,7 +43,7 @@ public class AppointmentController : ControllerBase
     {
         if (!_cache.TryGetValue($"list_appointment_employee_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.EmployeeId == id).ToListAsync();
+            list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryEmployeeId == id).ToListAsync();
 
             _cache.Set($"list_appointment_employee_{id}", list, TimeSpan.FromMinutes(1));
         }
@@ -62,7 +62,7 @@ public class AppointmentController : ControllerBase
     {
         if (!_cache.TryGetValue($"list_appointment_client_{id}", out List<ContextModels.AppointmentContextModel>? list))
         {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.ClientId == id).ToListAsync();
+            list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryClientId == id).ToListAsync();
 
             _cache.Set($"list_appointment_client_{id}", list, TimeSpan.FromMinutes(1));
         }
@@ -81,12 +81,7 @@ public class AppointmentController : ControllerBase
     {
         int userId = int.Parse(User.FindFirst("ClaimUserId")!.Value);
 
-        if (!_cache.TryGetValue($"list_appointment_me_{userId}", out List<ContextModels.AppointmentContextModel>? list))
-        {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.ClientId == userId).ToListAsync();
-
-            _cache.Set($"list_appointment_me_{userId}", list, TimeSpan.FromMinutes(1));
-        }
+        var list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryClientId == userId).ToListAsync();
 
         if (list is null)
         {
@@ -98,7 +93,7 @@ public class AppointmentController : ControllerBase
 
     // [Authorize(Roles = "admin, client")]
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateAppointmentAction([FromBody] CreateAppointmentDTO createAppointmentDTO)
+    public async Task<IActionResult> CreateAppointmentAction([FromBody] AppointmentDTO.CreateAppointmentDTO createAppointmentDTO)
     {
         var employee = await _context.Employees.SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
         if (employee is null)
@@ -119,9 +114,13 @@ public class AppointmentController : ControllerBase
 
         var appointment = new ContextModels.AppointmentContextModel
         {
-            Employee = employee!,
-            Client = client!,
-            Service = service!,
+            HistoryEmployeeId = employee!.Id,
+            HistoryEmployeeName = employee!.Name,
+            HistoryClientId = client!.Id,
+            HistoryClientName = client!.Name,
+            HistoryServiceId = service!.Id,
+            HistoryServiceName = service!.Name,
+
             StartDate = createAppointmentDTO.StartDate!.Value,
             EndDate = createAppointmentDTO.StartDate!.Value.AddMinutes(service!.Duration)
         };
@@ -130,16 +129,15 @@ public class AppointmentController : ControllerBase
         await _context.SaveChangesAsync();
 
         _context.Remove("list_appointment_all");
-        _context.Remove($"list_appointment_employee_{createAppointmentDTO.EmployeeId}");
-        _context.Remove($"list_appointment_client_{createAppointmentDTO.ClientId}");
-        _context.Remove($"list_appointment_me_{createAppointmentDTO.ServiceId}");
+        _context.Remove($"list_appointment_employee_{employee.Id}");
+        _context.Remove($"list_appointment_client_{client.Id}");
 
         return NoContent();
     }
 
     // [Authorize(Roles = "admin, employee")]
     [HttpPut(template: "update/{id:int?}")]
-    public async Task<IActionResult> UpdateAppointmentAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateAppointmentDTO updateAppointmentDTO)
+    public async Task<IActionResult> UpdateAppointmentAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] AppointmentDTO.UpdateAppointmentDTO updateAppointmentDTO)
     {
         var appointment = await _context.Appointments.SingleOrDefaultAsync(a => a.Id == id);
 
@@ -147,16 +145,16 @@ public class AppointmentController : ControllerBase
         {
             return NotFound($"No Appointment of Id:{id} was found");
         }
-
-        if (updateAppointmentDTO.ServiceId is not null)
+        if (appointment.Resolved == true)
         {
-            var service = await _context.Services.AsNoTracking().SingleOrDefaultAsync(s => s.Id == updateAppointmentDTO.ServiceId);
-
-            if (service is null)
-            {
-                appointment.Service = service!;
-            }
+            return Conflict($"Appointment of Id:{id} is resolved. It can't be customized anymore");
         }
+
+        if (!Enum.TryParse(updateAppointmentDTO.Status, true, out ContextModels.AppointmentContextModel.EnumAppointmentStatus status))
+        {
+            return BadRequest("Status in body is not recognized. Try one of these: 'scheduled', 'canceled', 'expired', 'done'");
+        }
+
         if (updateAppointmentDTO.StartDate is not null)
         {
             appointment.StartDate = updateAppointmentDTO.StartDate.Value;
@@ -165,13 +163,17 @@ public class AppointmentController : ControllerBase
         {
             appointment.EndDate = updateAppointmentDTO.EndDate.Value;
         }
-        if (updateAppointmentDTO.Resolved is not null)
-        {
-            appointment.Resolved = updateAppointmentDTO.Resolved.Value;
-        }
         if (updateAppointmentDTO.Status is not null)
         {
-            appointment.Status = updateAppointmentDTO.Status;
+            appointment.Status = status;
+        }
+        if (status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Done)
+        {
+            appointment.Resolved = true;
+        }
+        else if (updateAppointmentDTO.Resolved is not null)
+        {
+            appointment.Resolved = updateAppointmentDTO.Resolved.Value;
         }
 
         await _context.SaveChangesAsync();
@@ -179,7 +181,6 @@ public class AppointmentController : ControllerBase
         _context.Remove("list_appointment_all");
         _context.Remove($"list_appointment_employee_{id}");
         _context.Remove($"list_appointment_client_{id}");
-        _context.Remove($"list_appointment_me_{id}");
 
         return NoContent();
     }

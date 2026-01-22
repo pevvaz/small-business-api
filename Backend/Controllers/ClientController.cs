@@ -37,7 +37,7 @@ public class ClientController : ControllerBase
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateClientAction([FromBody] CreateUserDTO createUserDTO)
+    public async Task<IActionResult> CreateClientAction([FromBody] UserDTO.CreateUserDTO createUserDTO)
     {
         var client = new ContextModels.UserContextModel
         {
@@ -48,6 +48,14 @@ public class ClientController : ControllerBase
         };
 
         await _context.Clients.AddAsync(client);
+
+        var session = new ContextModels.SessionContextModel
+        {
+            User = client
+        };
+
+        await _context.Sessions.AddAsync(session);
+
         await _context.SaveChangesAsync();
 
         _cache.Remove("list_client");
@@ -56,7 +64,7 @@ public class ClientController : ControllerBase
     }
 
     [HttpPut(template: "update/{id:int?}")]
-    public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
+    public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UserDTO.UpdateUserDTO updateUserDTO)
     {
         var client = await _context.Clients.SingleOrDefaultAsync(c => c.Id == id);
 
@@ -65,10 +73,6 @@ public class ClientController : ControllerBase
             return NotFound($"No Client of Id:{id} was found");
         }
 
-        if (!String.IsNullOrEmpty(updateUserDTO.Role))
-        {
-            client.Role = updateUserDTO.Role;
-        }
         if (!String.IsNullOrEmpty(updateUserDTO.Name))
         {
             client.Name = updateUserDTO.Name;

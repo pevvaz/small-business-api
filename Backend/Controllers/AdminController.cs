@@ -37,7 +37,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateAdminAction([FromBody] CreateUserDTO createUserDTO)
+    public async Task<IActionResult> CreateAdminAction([FromBody] UserDTO.CreateUserDTO createUserDTO)
     {
         var admin = new ContextModels.UserContextModel
         {
@@ -63,7 +63,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpPut(template: "update/{id:int?}")]
-    public async Task<IActionResult> UpdateAdminAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateUserDTO updateUserDTO)
+    public async Task<IActionResult> UpdateAdminAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UserDTO.UpdateUserDTO updateUserDTO)
     {
         var admin = await _context.Admins.SingleOrDefaultAsync(a => a.Id == id);
 
@@ -72,10 +72,6 @@ public class AdminController : ControllerBase
             return NotFound($"No Admin of Id:{id} was found");
         }
 
-        if (!String.IsNullOrEmpty(updateUserDTO.Role))
-        {
-            admin.Role = updateUserDTO.Role;
-        }
         if (!String.IsNullOrEmpty(updateUserDTO.Name))
         {
             admin.Name = updateUserDTO.Name;

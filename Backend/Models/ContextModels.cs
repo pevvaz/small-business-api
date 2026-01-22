@@ -34,24 +34,27 @@ public class ContextModels
 
     public class AppointmentContextModel
     {
+        public enum EnumAppointmentStatus
+        {
+            Scheduled,
+            Canceled,
+            Expired,
+            Done,
+        }
+
         public int Id { get; set; }
 
-        [ForeignKey(nameof(Employee))]
-        public int EmployeeId { get; set; }
-        public required UserContextModel Employee { get; set; }
-
-        [ForeignKey(nameof(Client))]
-        public int ClientId { get; set; }
-        public required UserContextModel Client { get; set; }
-
-        [ForeignKey(nameof(Service))]
-        public int ServiceId { get; set; }
-        public required ServiceContextModel Service { get; set; }
+        public int HistoryEmployeeId { get; set; }
+        public int HistoryClientId { get; set; }
+        public int HistoryServiceId { get; set; }
+        public required string HistoryEmployeeName { get; set; }
+        public required string HistoryClientName { get; set; }
+        public required string HistoryServiceName { get; set; }
 
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
+        public EnumAppointmentStatus Status { get; set; } = EnumAppointmentStatus.Scheduled;
         public bool Resolved { get; set; } = false;
-        public string Status { get; set; } = "scheduled";
     }
 
     public class RefreshTokenContextModel

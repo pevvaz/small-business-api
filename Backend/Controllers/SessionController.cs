@@ -25,13 +25,13 @@ public class SessionController : ControllerBase
     }
 
     [HttpPost(template: "login")]
-    public async Task<IActionResult> LoginAction([FromBody] LoginSessionDTO loginSessionDTO)
+    public async Task<IActionResult> LoginAction([FromBody] SessionDTO.LoginSessionDTO loginSessionDTO)
     {
-        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).FirstOrDefaultAsync(s => (s.User.Name == loginSessionDTO.Name || s.User.Email == loginSessionDTO.Email) && s.User.Password == loginSessionDTO.Password);
+        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).SingleOrDefaultAsync(s => (s.User.Name == loginSessionDTO.Name || s.User.Email == loginSessionDTO.Email) && s.User.Password == loginSessionDTO.Password);
 
         if (session is null)
         {
-            return BadRequest("Role in body doesn't exist");
+            return BadRequest("Session was not found");
         }
 
         var tokenDescriptor = new SecurityTokenDescriptor()
@@ -43,7 +43,7 @@ public class SessionController : ControllerBase
                 new Claim(ClaimTypes.Role,session.User.Role.ToLower()),
                 new Claim(ClaimTypes.Name,session.User.Name),
                 new Claim(ClaimTypes.Email,session.User.Email),
-                new Claim("ClaimUserId", $"{session.Id}"),
+                new Claim("ClaimUserId", $"{session.Id}"), // session.Id or session.User.Id?
                 new Claim(ClaimTypes.Hash, Encoding.UTF8.GetHashCode().ToString())
             }),
             Expires = DateTime.UtcNow.AddMinutes(5),

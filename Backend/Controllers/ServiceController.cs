@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
+// [Authorize(Roles = "admin")]
 [Route(template: "[controller]")]
-[Authorize(Roles = "admin")]
 public class ServiceController : ControllerBase
 {
     private readonly IMemoryCache _cache;
@@ -37,9 +37,8 @@ public class ServiceController : ControllerBase
     }
 
     [HttpPost(template: "create")]
-    public async Task<IActionResult> CreateServiceAction([FromBody] CreateServiceDTO createServiceDTO)
+    public async Task<IActionResult> CreateServiceAction([FromBody] ServiceDTO.CreateServiceDTO createServiceDTO)
     {
-        // TEST WITH AND WITHOUT Id=0
         var service = new ContextModels.ServiceContextModel
         {
             Name = createServiceDTO.Name,
@@ -57,9 +56,9 @@ public class ServiceController : ControllerBase
     }
 
     [HttpPut(template: "update/{id:int?}")]
-    public async Task<IActionResult> UpdateServiceAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UpdateServiceDTO updateServiceDTO)
+    public async Task<IActionResult> UpdateServiceAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] ServiceDTO.UpdateServiceDTO updateServiceDTO)
     {
-        var service = await _context.Services.FirstAsync(s => s.Id == id);
+        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == id);
 
         if (service is null)
         {
@@ -93,7 +92,7 @@ public class ServiceController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteServiceAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var service = await _context.Services.FirstAsync(s => s.Id == id);
+        var service = await _context.Services.SingleOrDefaultAsync(s => s.Id == id);
 
         if (service is null)
         {
