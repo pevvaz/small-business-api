@@ -58,7 +58,10 @@ public class ContextModels
     {
         public int Id { get; set; }
 
+        [ForeignKey(nameof(User))]
         public required int UserId { get; set; }
+        public required UserContextModel User { get; set; }
+
         public required string Token { get; set; }
         public required DateTime Exprire { get; set; }
         public required bool Valid { get; set; }

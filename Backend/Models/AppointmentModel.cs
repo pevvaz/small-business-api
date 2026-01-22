@@ -14,8 +14,10 @@ public class CreateAppointmentDTO
     [Range(1, int.MaxValue, ErrorMessage = "Service in body is out of range")]
     public int? ServiceId { get; set; }
 
-    [Required(ErrorMessage = "StartDate in body is required")] public required DateTime? StartDate { get; set; }
-    [Required(ErrorMessage = "EndDate in body is required")] public required DateTime? EndDate { get; set; }
+    [Required(ErrorMessage = "StartDate in body is required")]
+    public required DateTime? StartDate { get; set; }
+    [Required(ErrorMessage = "EndDate in body is required")]
+    public required DateTime? EndDate { get; set; }
 }
 
 public class UpdateAppointmentDTO
