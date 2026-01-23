@@ -23,12 +23,12 @@ public class AdminController : ControllerBase
     {
         if (!_cache.TryGetValue("list_admin", out List<ContextModels.UserContextModel>? list))
         {
-            list = await _context.Users.Where(u => u.Role == "admin").AsNoTracking().ToListAsync();
+            list = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Admin).AsNoTracking().ToListAsync();
 
             _cache.Set("list_admin", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -46,7 +46,7 @@ public class AdminController : ControllerBase
 
         var admin = new ContextModels.UserContextModel
         {
-            Role = "admin",
+            Role = ContextModels.UserContextModel.EnumUserRoles.Admin,
             Name = createUserDTO.Name,
             Password = createUserDTO.Password,
             Email = createUserDTO.Email

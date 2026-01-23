@@ -23,7 +23,7 @@ public class ContextModels
 
         public int Id { get; set; }
 
-        public required string Role { get; set; }
+        public required EnumUserRoles Role { get; set; }
         public required string Name { get; set; }
         public required string Password { get; set; }
         public required string Email { get; set; }
@@ -31,12 +31,18 @@ public class ContextModels
 
     public class ServiceContextModel
     {
+        public enum EnumServiceStatus
+        {
+            Active,
+            Deactive
+        }
+
         public int Id { get; set; }
 
         public required string Name { get; set; }
         public required decimal Price { get; set; }
         public required int Duration { get; set; }
-        public required string Status { get; set; }
+        public required EnumServiceStatus Status { get; set; }
     }
 
     public class AppointmentContextModel
@@ -44,7 +50,7 @@ public class ContextModels
         public enum EnumAppointmentStatus
         {
             Scheduled,
-            Canceled,
+            Cancelled,
             Expired,
             Done,
         }

@@ -29,13 +29,19 @@ public class AppointmentController : ControllerBase
             _cache.Set("list_appointment_all", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
 
         return Ok(list!);
     }
+
+    /* // [Authorize(Roles = "admin")]
+    [HttpGet(template: "list")]
+
+    // [Authorize(Roles = "admin")]
+    [HttpGet(template: "list")] */
 
     // [Authorize(Roles = "admin, employee")]
     [HttpGet(template: "list/employee/{id:int?}")]
@@ -48,7 +54,7 @@ public class AppointmentController : ControllerBase
             _cache.Set($"list_appointment_employee_{id}", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -67,7 +73,7 @@ public class AppointmentController : ControllerBase
             _cache.Set($"list_appointment_client_{id}", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -83,7 +89,7 @@ public class AppointmentController : ControllerBase
 
         var list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryClientId == userId).ToListAsync();
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -95,13 +101,13 @@ public class AppointmentController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateAppointmentAction([FromBody] AppointmentDTO.CreateAppointmentDTO createAppointmentDTO)
     {
-        var employee = await _context.Users.Where(u => u.Role == "employee").AsNoTracking().SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
+        var employee = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Employee).AsNoTracking().SingleOrDefaultAsync(e => e.Id == createAppointmentDTO.EmployeeId);
         if (employee is null)
         {
             return NotFound($"No Employee of Id:{createAppointmentDTO.EmployeeId} was found");
         }
 
-        var client = await _context.Users.Where(u => u.Role == "client").AsNoTracking().SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.ClientId);
+        var client = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Client).AsNoTracking().SingleOrDefaultAsync(c => c.Id == createAppointmentDTO.ClientId);
         if (client is null)
         {
             return NotFound($"No Client of Id:{createAppointmentDTO.ClientId} was found");
@@ -153,28 +159,25 @@ public class AppointmentController : ControllerBase
 
         if (!Enum.TryParse(updateAppointmentDTO.Status, true, out ContextModels.AppointmentContextModel.EnumAppointmentStatus status))
         {
-            return BadRequest("Status in body is not recognized. Try one of these: 'scheduled', 'canceled', 'expired', 'done'");
+            return BadRequest("Status in body is not recognized. Try one of these: 'Scheduled', 'Cancelled', 'Expired', 'Done'");
         }
 
         if (updateAppointmentDTO.StartDate is not null)
         {
+            var duration = appointment.EndDate - appointment.StartDate;
+
             appointment.StartDate = updateAppointmentDTO.StartDate.Value;
+
+            appointment.EndDate = appointment.StartDate.Add(duration);
         }
-        if (updateAppointmentDTO.EndDate is not null)
-        {
-            appointment.EndDate = updateAppointmentDTO.EndDate.Value;
-        }
-        if (updateAppointmentDTO.Status is not null)
+        if (!String.IsNullOrEmpty(updateAppointmentDTO.Status))
         {
             appointment.Status = status;
         }
-        if (status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Done)
+
+        if (status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Done || status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Cancelled || (updateAppointmentDTO.Resolved != null && updateAppointmentDTO.Resolved != false))
         {
             appointment.Resolved = true;
-        }
-        else if (updateAppointmentDTO.Resolved is not null)
-        {
-            appointment.Resolved = updateAppointmentDTO.Resolved.Value;
         }
 
         await _context.SaveChangesAsync();

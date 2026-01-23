@@ -23,12 +23,12 @@ public class ClientController : ControllerBase
     {
         if (!_cache.TryGetValue("list_client", out List<ContextModels.UserContextModel>? list))
         {
-            list = await _context.Users.Where(u => u.Role == "client").AsNoTracking().ToListAsync();
+            list = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Client).AsNoTracking().ToListAsync();
 
             _cache.Set("list_client", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -46,7 +46,7 @@ public class ClientController : ControllerBase
 
         var client = new ContextModels.UserContextModel
         {
-            Role = "client",
+            Role = ContextModels.UserContextModel.EnumUserRoles.Client,
             Name = createUserDTO.Name,
             Password = createUserDTO.Password,
             Email = createUserDTO.Email,
@@ -71,7 +71,7 @@ public class ClientController : ControllerBase
     [HttpPut(template: "update/{id:int?}")]
     public async Task<IActionResult> UpdateClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id, [FromBody] UserDTO.UpdateUserDTO updateUserDTO)
     {
-        var client = await _context.Users.Where(u => u.Role == "client").SingleOrDefaultAsync(c => c.Id == id);
+        var client = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Client).SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {
@@ -111,7 +111,7 @@ public class ClientController : ControllerBase
     [HttpDelete(template: "delete/{id:int?}")]
     public async Task<IActionResult> DeleteClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
     {
-        var client = await _context.Users.Where(u => u.Role == "client").SingleOrDefaultAsync(c => c.Id == id);
+        var client = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Client).SingleOrDefaultAsync(c => c.Id == id);
 
         if (client is null)
         {

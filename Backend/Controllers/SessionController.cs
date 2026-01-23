@@ -27,7 +27,12 @@ public class SessionController : ControllerBase
     [HttpPost(template: "login")]
     public async Task<IActionResult> LoginAction([FromBody] SessionDTO.LoginSessionDTO loginSessionDTO)
     {
-        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).SingleOrDefaultAsync(s => (s.User.Name == loginSessionDTO.Name || s.User.Email == loginSessionDTO.Email) && s.User.Password == loginSessionDTO.Password);
+        if (String.IsNullOrEmpty(loginSessionDTO.NameOrEmail))
+        {
+            return BadRequest("Name or Email in body is required");
+        }
+
+        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).SingleOrDefaultAsync(s => (s.User.Name == loginSessionDTO.NameOrEmail || s.User.Email == loginSessionDTO.NameOrEmail) && s.User.Password == loginSessionDTO.Password);
 
         if (session is null)
         {
@@ -37,10 +42,10 @@ public class SessionController : ControllerBase
         var tokenDescriptor = new SecurityTokenDescriptor()
         {
             Issuer = _configuration["Settings:Issuer"]!,
-            Audience = session.User.Role.ToLower(),
+            Audience = session.User.Role.ToString().ToLower(),
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.Role,session.User.Role.ToLower()),
+                new Claim(ClaimTypes.Role,session.User.Role.ToString().ToLower()),
                 new Claim(ClaimTypes.Name,session.User.Name),
                 new Claim(ClaimTypes.Email,session.User.Email),
                 new Claim("ClaimUserId", $"{session.Id}"), // session.Id or session.User.Id?

@@ -23,12 +23,12 @@ public class EmployeeController : ControllerBase
     {
         if (!_cache.TryGetValue("list_employee", out List<ContextModels.UserContextModel>? list))
         {
-            list = await _context.Users.Where(u => u.Role == "employee").AsNoTracking().ToListAsync();
+            list = await _context.Users.Where(u => u.Role == ContextModels.UserContextModel.EnumUserRoles.Employee).AsNoTracking().ToListAsync();
 
             _cache.Set("list_employee", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -46,7 +46,7 @@ public class EmployeeController : ControllerBase
 
         var employee = new ContextModels.UserContextModel
         {
-            Role = "employee",
+            Role = ContextModels.UserContextModel.EnumUserRoles.Employee,
             Name = createUserDTO.Name,
             Password = createUserDTO.Password,
             Email = createUserDTO.Email

@@ -18,14 +18,11 @@ public class AppointmentDTO
 
         [Required(ErrorMessage = "StartDate in body is required")]
         public required DateTime? StartDate { get; set; }
-        [Required(ErrorMessage = "EndDate in body is required")]
-        public required DateTime? EndDate { get; set; }
     }
 
     public class UpdateAppointmentDTO
     {
         public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
         public string? Status { get; set; }
         public bool? Resolved { get; set; }
     }

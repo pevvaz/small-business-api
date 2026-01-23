@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Small_Business_Api.Migrations
 {
     [DbContext(typeof(SmallBusinessContext))]
-    [Migration("20260122230949_SmallBusinessAPIMigrations")]
+    [Migration("20260123165245_SmallBusinessAPIMigrations")]
     partial class SmallBusinessAPIMigrations
     {
         /// <inheritdoc />
@@ -105,9 +105,8 @@ namespace Small_Business_Api.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -148,9 +147,8 @@ namespace Small_Business_Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

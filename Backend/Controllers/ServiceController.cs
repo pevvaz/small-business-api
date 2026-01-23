@@ -28,7 +28,7 @@ public class ServiceController : ControllerBase
             _cache.Set("list_service", list, TimeSpan.FromMinutes(1));
         }
 
-        if (list is null)
+        if (!list!.Any())
         {
             return NoContent();
         }
@@ -39,12 +39,17 @@ public class ServiceController : ControllerBase
     [HttpPost(template: "create")]
     public async Task<IActionResult> CreateServiceAction([FromBody] ServiceDTO.CreateServiceDTO createServiceDTO)
     {
+        if (!Enum.TryParse(createServiceDTO.Status, true, out ContextModels.ServiceContextModel.EnumServiceStatus status))
+        {
+            return BadRequest("Status should be 'Active' or 'Deactive'");
+        }
+
         var service = new ContextModels.ServiceContextModel
         {
             Name = createServiceDTO.Name,
             Price = createServiceDTO.Price!.Value,
             Duration = createServiceDTO.Duration!.Value,
-            Status = createServiceDTO.Status
+            Status = status
         };
 
         await _context.Services.AddAsync(service);
@@ -79,7 +84,12 @@ public class ServiceController : ControllerBase
         }
         if (!String.IsNullOrEmpty(updateServiceDTO.Status))
         {
-            service.Status = updateServiceDTO.Status;
+            if (!Enum.TryParse(updateServiceDTO.Status, true, out ContextModels.ServiceContextModel.EnumServiceStatus status))
+            {
+                return BadRequest("Status should be 'Active' or 'Deactive'");
+            }
+
+            service.Status = status;
         }
 
         await _context.SaveChangesAsync();
