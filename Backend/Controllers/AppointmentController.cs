@@ -19,6 +19,45 @@ public class AppointmentController : ControllerBase
 
     // [Authorize(Roles = "admin")]
     [HttpGet(template: "list")]
+    public async Task<IActionResult> ListAppointmentAction(int? employee, int? client, int? service, string? status, bool? resolved)
+    {
+        var query = _context.Appointments.AsQueryable();
+
+        if (employee is not null)
+        {
+            query = query.Where(a => a.HistoryEmployeeId == employee);
+        }
+        if (client is not null)
+        {
+            query = query.Where(a => a.HistoryClientId == client);
+        }
+        if (service is not null)
+        {
+            query = query.Where(a => a.HistoryServiceId == service);
+        }
+        if (status is not null)
+        {
+            if (Enum.TryParse(status, true, out ContextModels.AppointmentContextModel.EnumAppointmentStatus enumStatus))
+            {
+                query = query.Where(a => a.Status == enumStatus);
+            }
+        }
+        if (resolved is not null)
+        {
+            query = query.Where(a => a.Resolved == resolved);
+        }
+
+        var list = await query.ToListAsync();
+
+        if (!list.Any())
+        {
+            return NoContent();
+        }
+
+        return Ok(list);
+    }
+
+    // [Authorize(Roles = "admin")]
     [HttpGet(template: "list/all")]
     public async Task<IActionResult> ListAppointmentAllAction()
     {
@@ -36,12 +75,6 @@ public class AppointmentController : ControllerBase
 
         return Ok(list!);
     }
-
-    /* // [Authorize(Roles = "admin")]
-    [HttpGet(template: "list")]
-
-    // [Authorize(Roles = "admin")]
-    [HttpGet(template: "list")] */
 
     // [Authorize(Roles = "admin, employee")]
     [HttpGet(template: "list/employee/{id:int?}")]
