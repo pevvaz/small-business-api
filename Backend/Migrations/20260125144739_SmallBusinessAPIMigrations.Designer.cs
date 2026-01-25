@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Small_Business_Api.Migrations
 {
     [DbContext(typeof(SmallBusinessContext))]
-    [Migration("20260123165245_SmallBusinessAPIMigrations")]
+    [Migration("20260125144739_SmallBusinessAPIMigrations")]
     partial class SmallBusinessAPIMigrations
     {
         /// <inheritdoc />
@@ -25,31 +25,31 @@ namespace Small_Business_Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ClientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("HistoryClientId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("HistoryClientName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("HistoryEmployeeId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("HistoryEmployeeName")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("HistoryServiceId")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("HistoryServiceName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Resolved")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ServiceId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("StartDate")

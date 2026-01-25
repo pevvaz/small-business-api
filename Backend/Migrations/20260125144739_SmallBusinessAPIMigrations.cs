@@ -17,9 +17,9 @@ namespace Small_Business_Api.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    HistoryEmployeeId = table.Column<int>(type: "INTEGER", nullable: false),
-                    HistoryClientId = table.Column<int>(type: "INTEGER", nullable: false),
-                    HistoryServiceId = table.Column<int>(type: "INTEGER", nullable: false),
+                    EmployeeId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ClientId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ServiceId = table.Column<int>(type: "INTEGER", nullable: false),
                     HistoryEmployeeName = table.Column<string>(type: "TEXT", nullable: false),
                     HistoryClientName = table.Column<string>(type: "TEXT", nullable: false),
                     HistoryServiceName = table.Column<string>(type: "TEXT", nullable: false),

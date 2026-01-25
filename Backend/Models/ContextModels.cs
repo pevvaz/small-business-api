@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class ContextModels
@@ -57,9 +58,9 @@ public class ContextModels
 
         public int Id { get; set; }
 
-        public int HistoryEmployeeId { get; set; }
-        public int HistoryClientId { get; set; }
-        public int HistoryServiceId { get; set; }
+        public int EmployeeId { get; set; }
+        public int ClientId { get; set; }
+        public int ServiceId { get; set; }
         public required string HistoryEmployeeName { get; set; }
         public required string HistoryClientName { get; set; }
         public required string HistoryServiceName { get; set; }

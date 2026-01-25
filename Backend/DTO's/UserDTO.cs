@@ -8,6 +8,7 @@ public class UserDTO
         public required string Name { get; set; }
 
         [Required(ErrorMessage = "Email in body is required")]
+        [EmailAddress(ErrorMessage = "Email in body needs to be a valid email address")]
         public required string Email { get; set; }
 
         [Required(ErrorMessage = "Password in body is required")]
@@ -17,6 +18,8 @@ public class UserDTO
     public class UpdateUserDTO
     {
         public string? Name { get; set; }
+
+        [EmailAddress(ErrorMessage = "Email in body needs to be a valid email address")]
         public string? Email { get; set; }
         public string? Password { get; set; }
     }

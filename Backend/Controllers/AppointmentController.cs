@@ -25,15 +25,15 @@ public class AppointmentController : ControllerBase
 
         if (employee is not null)
         {
-            query = query.Where(a => a.HistoryEmployeeId == employee);
+            query = query.Where(a => a.EmployeeId == employee);
         }
         if (client is not null)
         {
-            query = query.Where(a => a.HistoryClientId == client);
+            query = query.Where(a => a.ClientId == client);
         }
         if (service is not null)
         {
-            query = query.Where(a => a.HistoryServiceId == service);
+            query = query.Where(a => a.ServiceId == service);
         }
         if (status is not null)
         {
@@ -57,70 +57,18 @@ public class AppointmentController : ControllerBase
         return Ok(list);
     }
 
-    // [Authorize(Roles = "admin")]
-    [HttpGet(template: "list/all")]
-    public async Task<IActionResult> ListAppointmentAllAction()
-    {
-        if (!_cache.TryGetValue("list_appointment_all", out List<ContextModels.AppointmentContextModel>? list))
-        {
-            list = await _context.Appointments.AsNoTracking().ToListAsync();
-
-            _cache.Set("list_appointment_all", list, TimeSpan.FromMinutes(1));
-        }
-
-        if (!list!.Any())
-        {
-            return NoContent();
-        }
-
-        return Ok(list!);
-    }
-
-    // [Authorize(Roles = "admin, employee")]
-    [HttpGet(template: "list/employee/{id:int?}")]
-    public async Task<IActionResult> ListAppointmentEmployeeAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
-    {
-        if (!_cache.TryGetValue($"list_appointment_employee_{id}", out List<ContextModels.AppointmentContextModel>? list))
-        {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryEmployeeId == id).ToListAsync();
-
-            _cache.Set($"list_appointment_employee_{id}", list, TimeSpan.FromMinutes(1));
-        }
-
-        if (!list!.Any())
-        {
-            return NoContent();
-        }
-
-        return Ok(list!);
-    }
-
-    // [Authorize(Roles = "admin, employee")]
-    [HttpGet(template: "list/client/{id:int?}")]
-    public async Task<IActionResult> ListAppointmentClientAction([FromRoute][Required(ErrorMessage = "Id in route is required")][Range(1, int.MaxValue, ErrorMessage = "Id in route is out of range")] int? id)
-    {
-        if (!_cache.TryGetValue($"list_appointment_client_{id}", out List<ContextModels.AppointmentContextModel>? list))
-        {
-            list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryClientId == id).ToListAsync();
-
-            _cache.Set($"list_appointment_client_{id}", list, TimeSpan.FromMinutes(1));
-        }
-
-        if (!list!.Any())
-        {
-            return NoContent();
-        }
-
-        return Ok(list!);
-    }
-
     // [Authorize(Roles = "client")]
     [HttpGet(template: "list/mine")]
     public async Task<IActionResult> ListAppointmentMeAction()
     {
         int userId = int.Parse(User.FindFirst("ClaimUserId")!.Value);
 
-        var list = await _context.Appointments.AsNoTracking().Where(a => a.HistoryClientId == userId).ToListAsync();
+        if (!_cache.TryGetValue($"listme_{userId}", out List<ContextModels.AppointmentContextModel>? list))
+        {
+            list = await _context.Appointments.AsNoTracking().Where(a => a.ClientId == userId).ToListAsync();
+
+            _cache.Set($"listme_{userId}", list, TimeSpan.FromMinutes(1));
+        }
 
         if (!list!.Any())
         {
@@ -154,11 +102,11 @@ public class AppointmentController : ControllerBase
 
         var appointment = new ContextModels.AppointmentContextModel
         {
-            HistoryEmployeeId = employee!.Id,
+            EmployeeId = employee!.Id,
             HistoryEmployeeName = employee!.Name,
-            HistoryClientId = client!.Id,
+            ClientId = client!.Id,
             HistoryClientName = client!.Name,
-            HistoryServiceId = service!.Id,
+            ServiceId = service!.Id,
             HistoryServiceName = service!.Name,
 
             StartDate = createAppointmentDTO.StartDate!.Value,
