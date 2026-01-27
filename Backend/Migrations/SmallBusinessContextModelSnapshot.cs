@@ -43,9 +43,6 @@ namespace Small_Business_Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("Resolved")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("ServiceId")
                         .HasColumnType("INTEGER");
 

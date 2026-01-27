@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Small_Business_Api.Migrations
 {
     [DbContext(typeof(SmallBusinessContext))]
-    [Migration("20260125144739_SmallBusinessAPIMigrations")]
+    [Migration("20260126211429_SmallBusinessAPIMigrations")]
     partial class SmallBusinessAPIMigrations
     {
         /// <inheritdoc />
@@ -45,9 +45,6 @@ namespace Small_Business_Api.Migrations
                     b.Property<string>("HistoryServiceName")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("Resolved")
-                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ServiceId")
                         .HasColumnType("INTEGER");

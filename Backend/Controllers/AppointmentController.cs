@@ -42,10 +42,6 @@ public class AppointmentController : ControllerBase
                 query = query.Where(a => a.Status == enumStatus);
             }
         }
-        if (resolved is not null)
-        {
-            query = query.Where(a => a.Resolved == resolved);
-        }
 
         var list = await query.ToListAsync();
 
@@ -99,18 +95,30 @@ public class AppointmentController : ControllerBase
         {
             return NotFound($"No Service of Id:{createAppointmentDTO.ServiceId} was found");
         }
+        if (service.Status == ContextModels.ServiceContextModel.EnumServiceStatus.Deactive)
+        {
+            return BadRequest("Only 'Active' Services can be assigned to an Appointment");
+        }
+
+        if (createAppointmentDTO.StartDate < DateTime.UtcNow)
+        {
+            return BadRequest("Start Date can't be before now");
+        }
+        if (await _context.Appointments.AnyAsync(a => a.StartDate <= createAppointmentDTO.StartDate && a.EndDate >= createAppointmentDTO.StartDate && a.EmployeeId == employee.Id || a.ClientId == client.Id))
+        {
+            return BadRequest($"Employee or Client is already assigned to an Appointment around this time"); // NEED TO TEST MORE
+        }
 
         var appointment = new ContextModels.AppointmentContextModel
         {
-            EmployeeId = employee!.Id,
-            HistoryEmployeeName = employee!.Name,
-            ClientId = client!.Id,
-            HistoryClientName = client!.Name,
-            ServiceId = service!.Id,
-            HistoryServiceName = service!.Name,
-
+            EmployeeId = employee.Id,
+            HistoryEmployeeName = employee.Name,
+            ClientId = client.Id,
+            HistoryClientName = client.Name,
+            ServiceId = service.Id,
+            HistoryServiceName = service.Name,
             StartDate = createAppointmentDTO.StartDate!.Value,
-            EndDate = createAppointmentDTO.StartDate!.Value.AddMinutes(service!.Duration)
+            EndDate = createAppointmentDTO.StartDate.Value.AddMinutes(service!.Duration)
         };
 
         await _context.Appointments.AddAsync(appointment);
@@ -133,32 +141,28 @@ public class AppointmentController : ControllerBase
         {
             return NotFound($"No Appointment of Id:{id} was found");
         }
-        if (appointment.Resolved == true)
-        {
-            return Conflict($"Appointment of Id:{id} is resolved. It can't be customized anymore");
-        }
 
         if (!Enum.TryParse(updateAppointmentDTO.Status, true, out ContextModels.AppointmentContextModel.EnumAppointmentStatus status))
         {
             return BadRequest("Status in body is not recognized. Try one of these: 'Scheduled', 'Cancelled', 'Expired', 'Done'");
         }
+        else
+        {
+            appointment.Status = status;
+        }
 
         if (updateAppointmentDTO.StartDate is not null)
         {
+            if (updateAppointmentDTO.StartDate < DateTime.UtcNow)
+            {
+                return BadRequest("Start Date can't be before now");
+            }
+
             var duration = appointment.EndDate - appointment.StartDate;
 
             appointment.StartDate = updateAppointmentDTO.StartDate.Value;
 
             appointment.EndDate = appointment.StartDate.Add(duration);
-        }
-        if (!String.IsNullOrEmpty(updateAppointmentDTO.Status))
-        {
-            appointment.Status = status;
-        }
-
-        if (status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Done || status == ContextModels.AppointmentContextModel.EnumAppointmentStatus.Cancelled || (updateAppointmentDTO.Resolved != null && updateAppointmentDTO.Resolved != false))
-        {
-            appointment.Resolved = true;
         }
 
         await _context.SaveChangesAsync();

@@ -9,7 +9,6 @@ public class ContextModels
 
         [ForeignKey(nameof(User))]
         public int UserId { get; set; }
-
         public required UserContextModel User { get; set; }
     }
 
@@ -51,9 +50,9 @@ public class ContextModels
         public enum EnumAppointmentStatus
         {
             Scheduled,
-            Cancelled,
             Expired,
-            Done,
+            Cancelled,
+            Finalized,
         }
 
         public int Id { get; set; }
@@ -61,6 +60,7 @@ public class ContextModels
         public int EmployeeId { get; set; }
         public int ClientId { get; set; }
         public int ServiceId { get; set; }
+
         public required string HistoryEmployeeName { get; set; }
         public required string HistoryClientName { get; set; }
         public required string HistoryServiceName { get; set; }
@@ -68,7 +68,6 @@ public class ContextModels
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
         public EnumAppointmentStatus Status { get; set; } = EnumAppointmentStatus.Scheduled;
-        public bool Resolved { get; set; } = false;
     }
 
     public class RefreshTokenContextModel
@@ -78,7 +77,6 @@ public class ContextModels
         [ForeignKey(nameof(User))]
         public required int UserId { get; set; }
         public required UserContextModel User { get; set; }
-
         public required string Token { get; set; }
         public required DateTime Exprire { get; set; }
         public required bool Valid { get; set; }

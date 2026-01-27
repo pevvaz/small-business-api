@@ -24,6 +24,5 @@ public class AppointmentDTO
     {
         public DateTime? StartDate { get; set; }
         public string? Status { get; set; }
-        public bool? Resolved { get; set; }
     }
 }
