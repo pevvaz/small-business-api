@@ -22,6 +22,11 @@ public class SmallBusinessContext : DbContext
             opt.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).IsRequired().OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<ContextModels.RefreshTokenContextModel>(opt =>
+        {
+            opt.HasOne(rt => rt.User).WithMany().HasForeignKey(rt => rt.UserId).IsRequired().OnDelete(DeleteBehavior.Cascade);
+        });
+
         base.OnModelCreating(modelBuilder);
     }
 }

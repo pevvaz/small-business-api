@@ -18,7 +18,7 @@ builder.Services.AddAuthentication("main_scheme").AddJwtBearer("main_scheme", op
 {
     opt.TokenValidationParameters = new TokenValidationParameters()
     {
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Settings:Secret"]!)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Settings:NonSuspiciousString"]!)),
 
         ValidAudiences = new[] { "admin", "employee", "client" },
 

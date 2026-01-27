@@ -10,4 +10,10 @@ public class SessionDTO
         public required string Password { get; set; }
 
     }
+
+    public class CreateRefreshTokenDTO
+    {
+        public string? Token { get; set; }
+        public DateTime? Expire { get; set; }
+    }
 }

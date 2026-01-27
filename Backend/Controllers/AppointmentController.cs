@@ -19,7 +19,7 @@ public class AppointmentController : ControllerBase
 
     // [Authorize(Roles = "admin")]
     [HttpGet(template: "list")]
-    public async Task<IActionResult> ListAppointmentAction(int? employee, int? client, int? service, string? status, bool? resolved)
+    public async Task<IActionResult> ListAppointmentAction(int? employee, int? client, int? service, string? status)
     {
         var query = _context.Appointments.AsQueryable();
 
@@ -35,7 +35,7 @@ public class AppointmentController : ControllerBase
         {
             query = query.Where(a => a.ServiceId == service);
         }
-        if (status is not null)
+        if (!String.IsNullOrEmpty(status))
         {
             if (Enum.TryParse(status, true, out ContextModels.AppointmentContextModel.EnumAppointmentStatus enumStatus))
             {
@@ -55,7 +55,7 @@ public class AppointmentController : ControllerBase
 
     // [Authorize(Roles = "client")]
     [HttpGet(template: "list/mine")]
-    public async Task<IActionResult> ListAppointmentMeAction()
+    public async Task<IActionResult> ListAppointmentMeAction() // TEST
     {
         int userId = int.Parse(User.FindFirst("ClaimUserId")!.Value);
 
@@ -104,9 +104,9 @@ public class AppointmentController : ControllerBase
         {
             return BadRequest("Start Date can't be before now");
         }
-        if (await _context.Appointments.AnyAsync(a => a.StartDate <= createAppointmentDTO.StartDate && a.EndDate >= createAppointmentDTO.StartDate && a.EmployeeId == employee.Id || a.ClientId == client.Id))
+        if (await _context.Appointments.AnyAsync(a => a.StartDate <= createAppointmentDTO.StartDate && a.EndDate >= createAppointmentDTO.StartDate && (a.EmployeeId == employee.Id || a.ClientId == client.Id)))
         {
-            return BadRequest($"Employee or Client is already assigned to an Appointment around this time"); // NEED TO TEST MORE
+            return BadRequest($"Employee or Client is already assigned to an Appointment around this time");
         }
 
         var appointment = new ContextModels.AppointmentContextModel
