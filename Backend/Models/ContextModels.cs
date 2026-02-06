@@ -75,7 +75,7 @@ public class ContextModels
         public int Id { get; set; }
 
         [ForeignKey(nameof(User))]
-        public required int UserId { get; set; }
+        public int UserId { get; set; }
         public required UserContextModel User { get; set; }
 
         public required string Token { get; set; }

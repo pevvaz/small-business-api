@@ -33,11 +33,11 @@ public class SessionController : ControllerBase
             return BadRequest("Name or Email in body is required");
         }
 
-        var session = await _context.Sessions.AsNoTracking().Include(s => s.User).SingleOrDefaultAsync(s => (s.User.Name == loginSessionDTO.NameOrEmail || s.User.Email == loginSessionDTO.NameOrEmail) && s.User.Password == loginSessionDTO.Password);
+        var session = await _context.Sessions.Include(s => s.User).SingleOrDefaultAsync(s => (s.User.Name == loginSessionDTO.NameOrEmail || s.User.Email == loginSessionDTO.NameOrEmail) && s.User.Password == loginSessionDTO.Password);
 
         if (session is null)
         {
-            return BadRequest("Session was not found");
+            return BadRequest("User not found");
         }
 
         var tokenDescriptor = new SecurityTokenDescriptor()
@@ -59,31 +59,35 @@ public class SessionController : ControllerBase
         var tokenHandler = new JwtSecurityTokenHandler();
         var securityToken = tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
 
-        var varBytes = RandomNumberGenerator.GetBytes(45);
-        var rtString = Convert.ToBase64String(varBytes);
-        var rtHash = Convert.ToBase64String(SHA256.HashData(varBytes));
+        // Refresh Token
+        var oldToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.UserId == session.UserId);
 
-        var refreshToken = new ContextModels.RefreshTokenContextModel
-        {
-            UserId = session.UserId,
-            User = session.User,
-            Token = rtHash,
-            Expire = DateTime.UtcNow.AddMinutes(10),
-        };
+        var rngBytes = RandomNumberGenerator.GetBytes(45);
+        var rtHash = Convert.ToBase64String(SHA256.HashData(rngBytes));
+        var refreshTokenString = Convert.ToBase64String(rngBytes);
 
-        if (await _context.RefreshTokens.AnyAsync(rt => rt.UserId == session.Id))
+        if (oldToken is not null)
         {
-            _context.RefreshTokens.Remove(refreshToken);
+            oldToken.Token = refreshTokenString;
+            oldToken.Expire = DateTime.UtcNow.AddMinutes(30);
         }
+        else
+        {
+            var refreshToken = new ContextModels.RefreshTokenContextModel
+            {
+                User = session.User,
+                Token = rtHash,
+                Expire = DateTime.UtcNow.AddMinutes(30),
+            };
 
-        await _context.RefreshTokens.AddAsync(refreshToken);
-
+            await _context.RefreshTokens.AddAsync(refreshToken);
+        }
         await _context.SaveChangesAsync();
 
         return Ok(new
         {
             securityToken,
-            rtString,
+            refreshTokenString,
         });
     }
 
@@ -100,9 +104,9 @@ public class SessionController : ControllerBase
 
         var refreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.Token == rtHash);
 
-        if (rtHash is null)
+        if (refreshToken is null)
         {
-            return BadRequest("RefreshToken doesn't exist or it gots deactivated");
+            return BadRequest("RefreshToken doesn't exist or it got deactivated");
         }
 
         var login = new SessionDTO.LoginSessionDTO
