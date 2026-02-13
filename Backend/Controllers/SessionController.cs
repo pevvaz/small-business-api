@@ -28,6 +28,8 @@ public class SessionController : ControllerBase
     [HttpPost(template: "login")]
     public async Task<IActionResult> LoginAction([FromBody] SessionDTO.LoginSessionDTO loginSessionDTO)
     {
+        //##############
+        // SecurityToken
         if (String.IsNullOrEmpty(loginSessionDTO.NameOrEmail))
         {
             return BadRequest("Name or Email in body is required");
@@ -37,38 +39,20 @@ public class SessionController : ControllerBase
 
         if (session is null)
         {
-            return BadRequest("User not found");
+            return NotFound("User not found");
         }
 
-        var tokenDescriptor = new SecurityTokenDescriptor()
-        {
-            Issuer = _configuration["Settings:Issuer"]!,
-            Audience = session.User.Role.ToString().ToLower(),
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.Role,session.User.Role.ToString().ToLower()),
-                new Claim(ClaimTypes.Name,session.User.Name),
-                new Claim(ClaimTypes.Email,session.User.Email),
-                new Claim("ClaimUserId", $"{session.Id}"),
-                new Claim(ClaimTypes.Hash, Encoding.UTF8.GetHashCode().ToString())
-            }),
-            Expires = DateTime.UtcNow.AddMinutes(5),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Settings:NonSuspiciousString"]!)), SecurityAlgorithms.HmacSha256)
-        };
+        string securityToken = await GenerateSecurityToken(session);
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var securityToken = tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
+        //##############
+        // RefreshToken
+        string rtHash = await GenerateRefreshToken();
 
-        // Refresh Token
         var oldToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.UserId == session.UserId);
-
-        var rngBytes = RandomNumberGenerator.GetBytes(45);
-        var rtHash = Convert.ToBase64String(SHA256.HashData(rngBytes));
-        var refreshTokenString = Convert.ToBase64String(rngBytes);
 
         if (oldToken is not null)
         {
-            oldToken.Token = refreshTokenString;
+            oldToken.Token = rtHash;
             oldToken.Expire = DateTime.UtcNow.AddMinutes(30);
         }
         else
@@ -87,34 +71,62 @@ public class SessionController : ControllerBase
         return Ok(new
         {
             securityToken,
-            refreshTokenString,
+            rtHash,
         });
     }
 
     [HttpPost(template: "refresh")]
     public async Task<IActionResult> RefreshAction([FromBody][Required(ErrorMessage = "RefreshToken in string is required")] string? rtString)
     {
-        if (!String.IsNullOrEmpty(rtString))
+        if (String.IsNullOrEmpty(rtString))
         {
             return BadRequest("RefreshToken in body can't be empty");
         }
 
-        var rtBytes = Encoding.UTF8.GetBytes(rtString!);
-        var rtHash = Convert.ToBase64String(rtBytes);
+        var refreshToken = await _context.RefreshTokens.Include(rt => rt.User).SingleOrDefaultAsync(rt => rt.Token == rtString);
 
-        var refreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.Token == rtHash);
-
-        if (refreshToken is null)
+        if (refreshToken is null || refreshToken.Expire <= DateTime.UtcNow)
         {
-            return BadRequest("RefreshToken doesn't exist or it got deactivated");
+            return BadRequest("RefreshToken doesn't exist or it's expired");
         }
 
-        var login = new SessionDTO.LoginSessionDTO
+        var session = await _context.Sessions.SingleOrDefaultAsync(s => s.User.Email == refreshToken.User.Email);
+
+        var newSecurityToken = GenerateSecurityToken(session!);
+        var newRefreshToken = GenerateRefreshToken();
+
+        return Ok(new { newSecurityToken, newRefreshToken });
+    }
+
+    private async Task<string> GenerateSecurityToken(ContextModels.SessionContextModel session)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var tokenDescriptor = new SecurityTokenDescriptor()
         {
-            NameOrEmail = refreshToken!.User.Email,
-            Password = refreshToken!.User.Password
+            Issuer = _configuration["Settings:Issuer"]!,
+            Audience = session.User.Role.ToString().ToLower(),
+            Subject = new ClaimsIdentity(new[]
+                    {
+                new Claim(ClaimTypes.Role,session.User.Role.ToString().ToLower()),
+                new Claim(ClaimTypes.Name,session.User.Name),
+                new Claim(ClaimTypes.Email,session.User.Email),
+                new Claim("ClaimUserId", $"{session.Id}"),
+                new Claim(ClaimTypes.Hash, Encoding.UTF8.GetHashCode().ToString())
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(5),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Settings:NonSuspiciousString"]!)), SecurityAlgorithms.HmacSha256)
         };
 
-        return RedirectToAction(nameof(LoginAction), login);
+        string securityToken = tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
+
+        return securityToken;
+    }
+    private async Task<string> GenerateRefreshToken()
+    {
+        var rngBytes = RandomNumberGenerator.GetBytes(45);
+        var rtHash = Convert.ToBase64String(SHA256.HashData(rngBytes));
+
+        return rtHash;
     }
 }
